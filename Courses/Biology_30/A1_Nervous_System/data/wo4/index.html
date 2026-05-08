@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Senses — Sensory Receptors</title>
+<style>
+:root {
+  --photo:    #d97706; --photo-soft:   #fef3c7; --photo-bd: #fcd34d; --photo-tx: #92400e;
+  --chemo:    #7c3aed; --chemo-soft:   #ede9fe; --chemo-bd: #c4b5fd; --chemo-tx: #4c1d95;
+  --mechano:  #0369a1; --mechano-soft: #e0f2fe; --mechano-bd:#7dd3fc;--mechano-tx:#0c4a6e;
+  --thermo:   #dc2626; --thermo-soft:  #fee2e2; --thermo-bd: #fca5a5;--thermo-tx: #7f1d1d;
+  --green: #15803d; --green-soft: #dcfce7;
+  --text: #111827; --muted: #6b7280;
+  --border: #e2e8f0; --bg: #f1f5f9; --panel: #ffffff;
+  --shadow: 0 4px 16px rgba(15,23,42,0.10);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  background: var(--bg); color: var(--text);
+}
+
+/* iSpring responsive stage */
+.slide-stage {
+  width: 100vw; height: 100vh;
+  aspect-ratio: 16 / 9;
+  max-width:  calc(100vh * 16 / 9);
+  max-height: calc(100vw *  9 / 16);
+  margin: auto; position: absolute; inset: 0;
+  background: var(--bg); overflow: hidden;
+  display: grid; grid-template-rows: 58px 1fr;
+}
+
+/* Header */
+header {
+  background: #0f172a;
+  padding: 0 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hdr-title { color: #fff; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.hdr-tag {
+  margin-left: 9px; padding: 2px 9px; border-radius: 20px;
+  background: rgba(255,255,255,0.13); color: #fff;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.stepper { display: flex; align-items: center; gap: 7px; }
+.step-btn {
+  border: none; border-radius: 20px; padding: 5px 14px;
+  font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+  background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.50);
+  transition: all 0.18s;
+}
+.step-btn.active { background: #fff; color: #0f172a; }
+.step-btn:hover:not(.active) { background: rgba(255,255,255,0.20); color: #fff; }
+.step-sep { width: 16px; height: 2px; background: rgba(255,255,255,0.20); border-radius: 1px; }
+
+/* Phase layout */
+.main { min-height: 0; display: grid; }
+.phase { display: none; min-height: 0; }
+.phase.active { display: grid; }
+
+/* ══════════════════════════════════════════════════
+   PHASE 1 — EXPLORE
+   Left: organ cards   Right: step-reveal panel
+══════════════════════════════════════════════════ */
+#ph1 { grid-template-columns: 1fr 290px; gap: 10px; padding: 10px; }
+
+/* Organ card grid */
+.organ-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 7px; min-height: 0;
+}
+.ocard {
+  background: var(--panel); border: 2px solid var(--border);
+  border-radius: 12px; padding: 7px 5px 5px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer; overflow: hidden; min-height: 0;
+  transition: border-color 0.16s, box-shadow 0.16s, transform 0.12s;
+}
+.ocard:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.ocard img { flex: 1; min-height: 0; width: 100%; object-fit: contain; pointer-events: none; }
+.ocard-name {
+  font-size: 11px; font-weight: 800; color: var(--muted);
+  text-align: center; white-space: nowrap; flex-shrink: 0;
+}
+/* Selection highlight colors per receptor type */
+.ocard.sel { transform: none; }
+.ocard.sel-photo   { border-color: var(--photo);   box-shadow: 0 0 0 3px #fef3c7; }
+.ocard.sel-chemo   { border-color: var(--chemo);   box-shadow: 0 0 0 3px #ede9fe; }
+.ocard.sel-mechano { border-color: var(--mechano); box-shadow: 0 0 0 3px #e0f2fe; }
+.ocard.sel-thermo  { border-color: var(--thermo);  box-shadow: 0 0 0 3px #fee2e2; }
+.ocard.sel-brain   { border-color: #6b7280; box-shadow: 0 0 0 3px #f3f4f6; }
+.ocard.sel-photo   .ocard-name { color: var(--photo-tx);   }
+.ocard.sel-chemo   .ocard-name { color: var(--chemo-tx);   }
+.ocard.sel-mechano .ocard-name { color: var(--mechano-tx); }
+.ocard.sel-thermo  .ocard-name { color: var(--thermo-tx);  }
+.ocard.sel-brain   .ocard-name { color: #374151; }
+
+/* Info panel */
+.info-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+}
+
+/* ── Idle state (nothing selected) ── */
+.info-idle {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; padding: 18px;
+  text-align: center;
+}
+.idle-prompt { font-size: 13px; font-weight: 700; color: var(--muted); line-height: 1.5; }
+.idle-dots { display: flex; gap: 8px; align-items: center; justify-content: center; }
+.idle-dot {
+  width: 11px; height: 11px; border-radius: 50%;
+}
+
+/* ── Step card (organ selected) ── */
+.info-step-view { display: none; flex: 1; flex-direction: column; min-height: 0; }
+.info-step-view.show { display: flex; }
+
+/* Organ name bar */
+.step-organbar {
+  padding: 9px 14px; background: #f8fafc; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+}
+.step-organbar-icon { font-size: 16px; }
+.step-organbar-name { font-size: 13px; font-weight: 800; color: var(--text); }
+
+/* Step content — the card that changes */
+.step-card {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 16px 18px; text-align: center;
+  transition: opacity 0.18s, transform 0.18s;
+}
+.step-card.out { opacity: 0; transform: translateY(8px); }
+.step-card.in  { animation: stepIn 0.22s ease both; }
+@keyframes stepIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+/* Step 1 — receptor type */
+.step-type-icon { font-size: 36px; margin-bottom: 8px; }
+.step-type-badge {
+  display: inline-block; padding: 5px 16px; border-radius: 20px;
+  font-size: 15px; font-weight: 850; letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+.badge-photo   { background: var(--photo-soft);   color: var(--photo-tx);   border: 1.5px solid var(--photo-bd);   }
+.badge-chemo   { background: var(--chemo-soft);   color: var(--chemo-tx);   border: 1.5px solid var(--chemo-bd);   }
+.badge-mechano { background: var(--mechano-soft); color: var(--mechano-tx); border: 1.5px solid var(--mechano-bd); }
+.badge-thermo  { background: var(--thermo-soft);  color: var(--thermo-tx);  border: 1.5px solid var(--thermo-bd);  }
+.badge-brain   { background: #f3f4f6; color: #374151; border: 1.5px solid #d1d5db; }
+.step-type-sub { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+/* Step 2 — detects */
+.step-detects-label {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px;
+}
+.step-detects-text {
+  font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.45;
+}
+.step-detects-text strong { font-weight: 900; }
+
+/* Step 3 — exam tip */
+.step-examtip-label {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.08em; color: #854d0e; margin-bottom: 10px;
+}
+.step-examtip-text {
+  font-size: 13px; font-weight: 600; color: #1c1917; line-height: 1.55;
+  background: #fefce8; border: 1px solid #fde68a; border-radius: 10px;
+  padding: 10px 12px; text-align: left;
+}
+.step-examtip-text strong { font-weight: 850; }
+
+/* Step footer nav */
+.step-footer {
+  padding: 8px 14px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.step-pips { display: flex; gap: 5px; align-items: center; }
+.step-pip {
+  width: 7px; height: 7px; border-radius: 50%; background: #d1d5db;
+  transition: all 0.2s;
+}
+.step-pip.on { width: 18px; border-radius: 999px; background: var(--text); }
+.step-nav { display: flex; gap: 6px; }
+.step-nav-btn {
+  width: 28px; height: 28px; border: 1.5px solid var(--border); border-radius: 7px;
+  background: var(--panel); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center; font-family: inherit;
+  color: var(--text); transition: border-color 0.14s, background 0.14s;
+}
+.step-nav-btn:disabled { opacity: 0.30; cursor: default; }
+.step-nav-btn:not(:disabled):hover { border-color: #94a3b8; background: #f8fafc; }
+
+/* ══════════════════════════════════════════════════
+   PHASE 2 — QUIZ
+══════════════════════════════════════════════════ */
+#ph2 { grid-template-columns: 1fr 340px; gap: 10px; padding: 10px; position: relative; }
+
+/* Left: organ image */
+.quiz-left {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: var(--shadow);
+  display: grid; grid-template-rows: 1fr auto;
+  overflow: hidden; min-height: 0;
+}
+.quiz-img-area {
+  display: flex; align-items: center; justify-content: center;
+  padding: 14px; min-height: 0; overflow: hidden;
+}
+.quiz-img-area img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px;
+}
+.quiz-q-area {
+  padding: 10px 14px 12px; background: #f8fafc; border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.q-counter {
+  display: flex; align-items: center; gap: 5px; margin-bottom: 5px;
+}
+.q-pip {
+  width: 7px; height: 7px; border-radius: 50%; background: #d1d5db;
+  transition: background 0.22s;
+}
+.q-pip.done    { background: var(--green); }
+.q-pip.current { background: var(--text); transform: scale(1.2); }
+.q-context { font-size: 11.5px; color: var(--muted); font-style: italic; margin-bottom: 4px; font-weight: 600; }
+.q-text    { font-size: 14px; font-weight: 750; color: var(--text); line-height: 1.4; }
+
+/* Right: choices → feedback (replace each other) */
+.quiz-right { display: flex; flex-direction: column; min-height: 0; }
+
+/* Choices view */
+.choices-view { display: flex; flex-direction: column; height: 100%; gap: 8px; }
+.choices-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.cbtn {
+  padding: 10px 8px; border: 2px solid var(--border); border-radius: 11px;
+  background: var(--panel); cursor: pointer; font-family: inherit;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  transition: border-color 0.14s, background 0.14s, transform 0.10s;
+  text-align: center;
+}
+.cbtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
+.cbtn:disabled { cursor: default; }
+.c-icon { font-size: 18px; }
+.c-name { font-size: 12.5px; font-weight: 800; line-height: 1.2; color: var(--text); }
+.c-hint { font-size: 10px; color: var(--muted); font-weight: 600; }
+/* hover */
+.cbtn[data-t="photo"]:hover:not(:disabled)   { border-color: var(--photo);   background: var(--photo-soft);   }
+.cbtn[data-t="chemo"]:hover:not(:disabled)   { border-color: var(--chemo);   background: var(--chemo-soft);   }
+.cbtn[data-t="mechano"]:hover:not(:disabled) { border-color: var(--mechano); background: var(--mechano-soft); }
+.cbtn[data-t="thermo"]:hover:not(:disabled)  { border-color: var(--thermo);  background: var(--thermo-soft);  }
+/* correct / wrong */
+.cbtn.c-photo   { background: var(--photo-soft)  !important; border-color: var(--photo)   !important; }
+.cbtn.c-chemo   { background: var(--chemo-soft)  !important; border-color: var(--chemo)   !important; }
+.cbtn.c-mechano { background: var(--mechano-soft)!important; border-color: var(--mechano) !important; }
+.cbtn.c-thermo  { background: var(--thermo-soft) !important; border-color: var(--thermo)  !important; }
+.cbtn.c-photo   .c-name,.cbtn.c-photo   .c-hint { color: var(--photo-tx)   !important; }
+.cbtn.c-chemo   .c-name,.cbtn.c-chemo   .c-hint { color: var(--chemo-tx)   !important; }
+.cbtn.c-mechano .c-name,.cbtn.c-mechano .c-hint { color: var(--mechano-tx) !important; }
+.cbtn.c-thermo  .c-name,.cbtn.c-thermo  .c-hint { color: var(--thermo-tx)  !important; }
+.cbtn.wrong { background: #fee2e2 !important; border-color: #ef4444 !important; animation: shake 0.25s ease; }
+.cbtn.wrong .c-name, .cbtn.wrong .c-hint { color: #991b1b !important; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+/* dim unchosen buttons after answer */
+.cbtn.dim { opacity: 0.28; }
+
+/* Feedback view — replaces choices after answer */
+.feedback-view {
+  display: none; flex: 1; flex-direction: column; gap: 10px; min-height: 0;
+}
+.feedback-view.show { display: flex; animation: fadeUp 0.24s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+.fb-card {
+  flex: 1; border-radius: 12px; padding: 14px 14px;
+  display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto;
+}
+.fb-card.fb-ok  { background: var(--green-soft); border: 1px solid #86efac; }
+.fb-card.fb-bad { background: #fee2e2;           border: 1px solid #fca5a5; }
+.fb-result { font-size: 16px; font-weight: 850; }
+.fb-result.ok  { color: #166534; }
+.fb-result.bad { color: #991b1b; }
+.fb-correct-label {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--muted); margin-bottom: 2px;
+}
+.fb-type-badge {
+  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  font-size: 13px; font-weight: 800;
+}
+.fb-explain { font-size: 12.5px; color: var(--text); line-height: 1.5; }
+.fb-explain strong { font-weight: 850; }
+
+.q-next-btn {
+  background: #0f172a; color: #fff; border: none; border-radius: 10px;
+  padding: 11px 14px; font-size: 13px; font-weight: 800;
+  cursor: pointer; font-family: inherit; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.q-next-btn:hover { background: #1e293b; }
+
+/* Score overlay */
+.score-overlay {
+  display: none; position: absolute; inset: 10px;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: var(--shadow);
+  flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 12px; padding: 24px;
+}
+.score-overlay.show { display: flex; animation: fadeUp 0.35s ease; }
+.sc-emoji { font-size: 42px; }
+.sc-num   { font-size: 26px; font-weight: 850; color: var(--green); letter-spacing: -0.03em; }
+.sc-msg   { font-size: 13px; color: var(--muted); max-width: 420px; line-height: 1.5; }
+.sc-btns  { display: flex; gap: 10px; margin-top: 4px; }
+.sc-retry   { background: var(--green); color: #fff; border: none; border-radius: 8px; padding: 9px 22px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.sc-retry:hover { background: #166534; }
+.sc-explore { background: #fff; color: #0f172a; border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 22px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.sc-explore:hover { background: #f1f5f9; }
+</style>
+</head>
+<body>
+<div id="al" aria-live="polite" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;"></div>
+
+<main class="slide-stage">
+  <header>
+    <div style="display:flex;align-items:baseline;gap:9px;">
+      <span class="hdr-title">The Senses</span>
+      <span class="hdr-tag">Biology 30 · A3</span>
+    </div>
+    <nav class="stepper">
+      <button class="step-btn active" id="stp1" onclick="goPhase(1)">1 · Explore</button>
+      <div class="step-sep"></div>
+      <button class="step-btn" id="stp2" onclick="goPhase(2)">2 · Classify It</button>
+    </nav>
+  </header>
+
+  <section class="main">
+
+  <!-- ═══════════ PHASE 1 ═══════════ -->
+  <div class="phase active" id="ph1">
+
+    <div class="organ-grid" id="organ-grid"></div>
+
+    <div class="info-panel">
+
+      <!-- Idle -->
+      <div class="info-idle" id="info-idle">
+        <div class="idle-prompt">Click an organ to explore<br>its receptor type.</div>
+        <div class="idle-dots">
+          <div class="idle-dot" style="background:var(--photo)"></div>
+          <div class="idle-dot" style="background:var(--chemo)"></div>
+          <div class="idle-dot" style="background:var(--mechano)"></div>
+          <div class="idle-dot" style="background:var(--thermo)"></div>
+        </div>
+        <div style="font-size:10.5px;color:#9ca3af;">4 receptor types to discover</div>
+      </div>
+
+      <!-- Step-card view -->
+      <div class="info-step-view" id="info-step-view">
+        <!-- organ name bar -->
+        <div class="step-organbar">
+          <span class="step-organbar-icon" id="sv-icon"></span>
+          <span class="step-organbar-name" id="sv-name"></span>
+        </div>
+        <!-- the card content -->
+        <div class="step-card" id="step-card"></div>
+        <!-- footer nav -->
+        <div class="step-footer">
+          <div class="step-pips" id="step-pips"></div>
+          <div class="step-nav">
+            <button class="step-nav-btn" id="sv-prev" onclick="stepNav(-1)" disabled>&#8592;</button>
+            <button class="step-nav-btn" id="sv-next" onclick="stepNav(1)">&#8594;</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════ PHASE 2 ═══════════ -->
+  <div class="phase" id="ph2">
+
+    <div class="quiz-left">
+      <div class="quiz-img-area"><img id="q-img" src="" alt=""></div>
+      <div class="quiz-q-area">
+        <div class="q-counter" id="q-counter"></div>
+        <div class="q-context"  id="q-context"></div>
+        <div class="q-text"     id="q-text"></div>
+      </div>
+    </div>
+
+    <div class="quiz-right">
+      <!-- Choices (shown while unanswered) -->
+      <div class="choices-view" id="choices-view">
+        <div class="choices-grid" id="choices-grid"></div>
+      </div>
+      <!-- Feedback (replaces choices after answer) -->
+      <div class="feedback-view" id="feedback-view">
+        <div class="fb-card" id="fb-card">
+          <div class="fb-result" id="fb-result"></div>
+          <div>
+            <div class="fb-correct-label">Correct receptor type</div>
+            <span class="fb-type-badge" id="fb-badge"></span>
+          </div>
+          <div class="fb-explain" id="fb-explain"></div>
+        </div>
+        <button class="q-next-btn" id="q-next-btn" onclick="nextQ()"></button>
+      </div>
+    </div>
+
+    <div class="score-overlay" id="score-overlay">
+      <div class="sc-emoji" id="sc-emoji"></div>
+      <div class="sc-num"   id="sc-num"></div>
+      <div class="sc-msg"   id="sc-msg"></div>
+      <div class="sc-btns">
+        <button class="sc-retry"   onclick="startQuiz()">Try Again</button>
+        <button class="sc-explore" onclick="goPhase(1)">← Back to Explore</button>
+      </div>
+    </div>
+
+  </div>
+  </section>
+</main>
+
+<script>
+'use strict';
+
+/* ── Data ───────────────────────────────────────────────── */
+var ORGANS = [
+  { id:'eye',    label:'Eye',    icon:'👁️',  img:'eye.png',
+    type:'photo',   badge:'Photoreceptors',   badgeCls:'badge-photo',   selCls:'sel-photo',
+    detects:'Light and colour',
+    detectsDetail:'The <strong>retina</strong> contains rods (light intensity) and cones (colour).',
+    examTip:'Photoreceptors respond to <strong>light energy</strong>. Rods = dim light / brightness. Cones = colour. Both in the retina.' },
+
+  { id:'ear',    label:'Ear',    icon:'👂',  img:'ear.png',
+    type:'mechano', badge:'Mechanoreceptors', badgeCls:'badge-mechano', selCls:'sel-mechano',
+    detects:'Sound waves and movement / balance',
+    detectsDetail:'<strong>Cilia</strong> (hair cells) in the inner ear bend in response to pressure waves and fluid movement.',
+    examTip:'The ear uses <strong>mechanoreceptors</strong> for both hearing (cochlea) and balance (semicircular canals).' },
+
+  { id:'nose',   label:'Nose',   icon:'👃',  img:'Olfactory receptors.png',
+    type:'chemo',   badge:'Chemoreceptors',   badgeCls:'badge-chemo',   selCls:'sel-chemo',
+    detects:'Airborne chemical molecules (10 000+ odours)',
+    detectsDetail:'<strong>Olfactory receptor cells</strong> bind specific odour molecules, triggering action potentials.',
+    examTip:'Smell and taste both use <strong>chemoreceptors</strong> — both detect dissolved or airborne <em>chemicals</em>.' },
+
+  { id:'tongue', label:'Tongue', icon:'👅',  img:'tongue.png',
+    type:'chemo',   badge:'Chemoreceptors',   badgeCls:'badge-chemo',   selCls:'sel-chemo',
+    detects:'Dissolved chemicals: salty, sweet, sour, bitter',
+    detectsDetail:'<strong>Taste buds</strong> on the tongue respond to chemicals dissolved in saliva.',
+    examTip:'Taste and smell are both <strong>chemoreceptors</strong>. This is a common exam point — they use the same receptor type.' },
+
+  { id:'skin',   label:'Skin',   icon:'✋',  img:'skin.png',
+    type:'mechano', badge:'Mechano + Thermo', badgeCls:'badge-mechano', selCls:'sel-mechano',
+    detects:'Touch, pressure (mechano) · Heat and cold (thermo)',
+    detectsDetail:'Skin has <strong>multiple receptor types</strong>: mechanoreceptors for touch/pressure; thermoreceptors for temperature.',
+    examTip:'Skin is the only organ with <strong>both mechanoreceptors and thermoreceptors</strong>. Know which type responds to which stimulus.' },
+
+  { id:'brain',  label:'Brain',  icon:'🧠',  img:'brain.png',
+    type:'brain',   badge:'Perception (CNS)', badgeCls:'badge-brain',   selCls:'sel-brain',
+    detects:'All sensory signals — interprets them as experience',
+    detectsDetail:'The brain interprets action potentials based on <strong>where they originate</strong>. Same impulse = vision from eye, sound from ear.',
+    examTip:'<strong>Sensation</strong> = receptor converts stimulus to impulse. <strong>Perception</strong> = brain interprets it. They are different.' }
+];
+
+var RTYPES = [
+  { id:'photo',   icon:'💡', name:'Photoreceptors',   hint:'Respond to light',         badgeCls:'badge-photo',   btnCls:'c-photo'   },
+  { id:'chemo',   icon:'🧪', name:'Chemoreceptors',   hint:'Respond to chemicals',     badgeCls:'badge-chemo',   btnCls:'c-chemo'   },
+  { id:'mechano', icon:'🔊', name:'Mechanoreceptors', hint:'Respond to force/movement',badgeCls:'badge-mechano', btnCls:'c-mechano' },
+  { id:'thermo',  icon:'🌡️', name:'Thermoreceptors',  hint:'Respond to temperature',   badgeCls:'badge-thermo',  btnCls:'c-thermo'  }
+];
+
+var QUESTIONS = [
+  { img:'eye.png', organ:'Eye',
+    context:'The retina contains rods and cones that respond to light.',
+    q:'What type of receptor enables vision?',
+    answer:'photo',
+    explain:'Rods and cones in the retina are <strong>photoreceptors</strong> — they convert light energy into electrochemical signals.' },
+  { img:'ear.png', organ:'Inner Ear',
+    context:'Cilia in the inner ear bend in response to sound waves and head movement.',
+    q:'What receptor type enables both hearing and balance?',
+    answer:'mechano',
+    explain:'Cilia respond to physical force — these are <strong>mechanoreceptors</strong>. The same type handles both sound (cochlea) and balance (semicircular canals).' },
+  { img:'Olfactory receptors.png', organ:'Nose',
+    context:'Olfactory cells in the nasal cavity detect airborne chemical molecules.',
+    q:'What receptor type is responsible for smell?',
+    answer:'chemo',
+    explain:'Olfactory cells are <strong>chemoreceptors</strong> — they bind chemical molecules. Both smell and taste use this same receptor type.' },
+  { img:'skin.png', organ:'Skin',
+    context:'You place your hand near a hot surface and sense the heat.',
+    q:'Which receptor type detects heat and cold in the skin?',
+    answer:'thermo',
+    explain:'<strong>Thermoreceptors</strong> in the skin respond to temperature changes. (Skin also has mechanoreceptors for touch — they are separate types.)' },
+  { img:'tongue.png', organ:'Tongue',
+    context:'Taste buds detect salty, sweet, sour, and bitter substances dissolved in saliva.',
+    q:'Taste buds use the same receptor type as olfactory cells. Which type?',
+    answer:'chemo',
+    explain:'Taste buds are <strong>chemoreceptors</strong> — they detect dissolved chemicals, just like olfactory cells detect airborne chemicals. Both = chemoreception.' }
+];
+
+/* ── Phase controller ───────────────────────────────────── */
+var curPhase = 1;
+function goPhase(n) {
+  document.getElementById('ph'+curPhase).classList.remove('active');
+  curPhase = n;
+  document.getElementById('ph'+curPhase).classList.add('active');
+  document.getElementById('stp1').classList.toggle('active', n===1);
+  document.getElementById('stp2').classList.toggle('active', n===2);
+  if (n===2 && qIdx===-1) startQuiz();
+}
+function ann(t){ var e=document.getElementById('al'); e.textContent=''; setTimeout(function(){e.textContent=t;},40); }
+
+/* ── Phase 1: Organ cards ───────────────────────────────── */
+function buildGrid() {
+  var g = document.getElementById('organ-grid');
+  ORGANS.forEach(function(o) {
+    var c = document.createElement('div');
+    c.className = 'ocard'; c.id = 'oc-'+o.id;
+    c.setAttribute('tabindex','0'); c.setAttribute('role','button');
+    c.setAttribute('aria-label', o.label+' — '+o.badge);
+    c.innerHTML = '<img src="'+o.img+'" alt="'+o.label+'"><span class="ocard-name">'+o.label+'</span>';
+    c.addEventListener('click', function(){ selectOrgan(o.id); });
+    c.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ selectOrgan(o.id); e.preventDefault(); }});
+    g.appendChild(c);
+  });
+}
+
+/* Step state */
+var curOrgan = null;
+var curStep  = 0;        // 0=type, 1=detects, 2=examtip
+var N_STEPS  = 3;
+
+function selectOrgan(id) {
+  // Deselect previous
+  ORGANS.forEach(function(x){ document.getElementById('oc-'+x.id).className='ocard'; });
+  var o = ORGANS.find(function(x){ return x.id===id; });
+  document.getElementById('oc-'+id).className = 'ocard '+o.selCls;
+  curOrgan = id; curStep = 0;
+
+  document.getElementById('info-idle').style.display = 'none';
+  document.getElementById('sv-icon').textContent = o.icon;
+  document.getElementById('sv-name').textContent  = o.label;
+  var sv = document.getElementById('info-step-view');
+  sv.className = 'info-step-view show';
+
+  renderStep(false);
+}
+
+function renderStep(animate) {
+  var o = ORGANS.find(function(x){ return x.id===curOrgan; });
+  var card = document.getElementById('step-card');
+
+  // Build content for current step
+  var html = '';
+  if (curStep===0) {
+    html = '<div class="step-type-icon">'+o.icon+'</div>'
+         + '<div class="step-type-badge '+o.badgeCls+'">'+o.badge+'</div>'
+         + '<div class="step-type-sub">receptor type</div>';
+  } else if (curStep===1) {
+    html = '<div class="step-detects-label">What it detects</div>'
+         + '<div class="step-detects-text">'+o.detectsDetail+'</div>';
+  } else {
+    html = '<div class="step-examtip-label">📝 Exam tip</div>'
+         + '<div class="step-examtip-text">'+o.examTip+'</div>';
+  }
+
+  if (animate) {
+    card.classList.remove('in'); card.classList.add('out');
+    setTimeout(function(){
+      card.innerHTML = html;
+      card.classList.remove('out'); card.classList.add('in');
+    }, 160);
+  } else {
+    card.innerHTML = html;
+    card.classList.add('in');
+  }
+
+  // Pips
+  var pips = document.getElementById('step-pips');
+  pips.innerHTML = '';
+  for (var i=0; i<N_STEPS; i++) {
+    var p = document.createElement('div');
+    p.className = 'step-pip'+(i===curStep?' on':'');
+    pips.appendChild(p);
+  }
+
+  document.getElementById('sv-prev').disabled = (curStep===0);
+  document.getElementById('sv-next').disabled = (curStep===N_STEPS-1);
+  ann(o.label+' step '+(curStep+1)+' of '+N_STEPS);
+}
+
+function stepNav(dir) {
+  var next = curStep + dir;
+  if (next<0||next>=N_STEPS) return;
+  curStep = next;
+  renderStep(true);
+}
+
+/* ── Phase 2: Quiz ──────────────────────────────────────── */
+var qIdx = -1, qScore = 0;
+
+function startQuiz() {
+  qIdx=0; qScore=0;
+  document.getElementById('score-overlay').classList.remove('show');
+  renderQ();
+}
+
+function renderQ() {
+  var q = QUESTIONS[qIdx];
+
+  // image
+  var img = document.getElementById('q-img');
+  img.src = q.img; img.alt = q.organ+' anatomy diagram';
+
+  // counter pips
+  var ctr = document.getElementById('q-counter');
+  ctr.innerHTML = '';
+  QUESTIONS.forEach(function(_,i){
+    var d=document.createElement('span');
+    d.className='q-pip'+(i<qIdx?' done':i===qIdx?' current':'');
+    ctr.appendChild(d);
+  });
+
+  document.getElementById('q-context').textContent = q.context;
+  document.getElementById('q-text').textContent    = q.q;
+
+  // choices
+  var grid = document.getElementById('choices-grid');
+  grid.innerHTML = '';
+  RTYPES.forEach(function(rt){
+    var b = document.createElement('button');
+    b.className='cbtn'; b.setAttribute('data-t',rt.id); b.type='button';
+    b.innerHTML='<span class="c-icon">'+rt.icon+'</span><span class="c-name">'+rt.name+'</span><span class="c-hint">'+rt.hint+'</span>';
+    b.addEventListener('click', function(){ answer(rt.id, q); });
+    grid.appendChild(b);
+  });
+
+  // show choices, hide feedback
+  document.getElementById('choices-view').style.display = '';
+  var fv = document.getElementById('feedback-view');
+  fv.className = 'feedback-view';
+
+  ann('Question '+(qIdx+1)+' of '+QUESTIONS.length+'. '+q.context+' '+q.q);
+}
+
+function answer(chosen, q) {
+  // Disable all
+  document.querySelectorAll('.cbtn').forEach(function(b){ b.disabled=true; });
+
+  var correct = chosen === q.answer;
+  if (correct) qScore++;
+
+  var rt = RTYPES.find(function(r){ return r.id===q.answer; });
+
+  // Mark chosen button (briefly dim wrong ones)
+  document.querySelectorAll('.cbtn').forEach(function(b){
+    var t = b.getAttribute('data-t');
+    if (t===q.answer) b.className='cbtn '+rt.btnCls;
+    else if (t===chosen && !correct) b.className='cbtn wrong';
+    else b.className='cbtn dim';
+  });
+
+  // After a short pause, swap choices → feedback
+  setTimeout(function(){
+    document.getElementById('choices-view').style.display='none';
+
+    var fb = document.getElementById('feedback-view');
+    fb.className='feedback-view show';
+
+    var card = document.getElementById('fb-card');
+    card.className = 'fb-card '+(correct?'fb-ok':'fb-bad');
+
+    document.getElementById('fb-result').className = 'fb-result '+(correct?'ok':'bad');
+    document.getElementById('fb-result').textContent = correct ? '✓ Correct!' : '✗ Not quite.';
+
+    var badge = document.getElementById('fb-badge');
+    badge.className = 'fb-type-badge '+rt.badgeCls;
+    badge.textContent = rt.name;
+
+    document.getElementById('fb-explain').innerHTML = q.explain;
+
+    var nxt = document.getElementById('q-next-btn');
+    nxt.textContent = qIdx < QUESTIONS.length-1 ? 'Next question →' : 'See results →';
+
+    ann((correct?'Correct. ':'Incorrect. ')+q.explain.replace(/<[^>]+>/g,''));
+  }, 600);
+}
+
+function nextQ() {
+  qIdx++;
+  if (qIdx>=QUESTIONS.length) { showScore(); return; }
+  renderQ();
+}
+
+function showScore() {
+  var pct = Math.round(qScore/QUESTIONS.length*100);
+  document.getElementById('score-overlay').classList.add('show');
+  document.getElementById('sc-emoji').textContent = pct>=80?'🎉':'📚';
+  document.getElementById('sc-num').textContent   = qScore+' / '+QUESTIONS.length+' correct ('+pct+'%)';
+  document.getElementById('sc-msg').textContent   = pct>=80
+    ? 'Excellent — you correctly identified all four receptor types.'
+    : 'Use the Explore phase to revisit any receptor types you mixed up, then try again.';
+  ann('Quiz complete. '+qScore+' out of '+QUESTIONS.length+' correct.');
+}
+
+/* ── Init ── */
+buildGrid();
+</script>
+</body>
+</html>

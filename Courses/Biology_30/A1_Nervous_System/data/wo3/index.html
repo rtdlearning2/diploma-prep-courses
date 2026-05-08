@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brain Structure Detective</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --amber-soft: #fef3c7;
+      --red-soft: #fee2e2;
+      --text: #111827;
+      --muted: #4b5563;
+      --border: #d1d5db;
+      --panel: #ffffff;
+      --bg: #f8fafc;
+      --shadow: 0 8px 18px rgba(15, 23, 42, 0.09);
+      --marker-size: 32px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      background: #eef2f7;
+      color: var(--text);
+    }
+
+    .slide-stage {
+      width: 100vw;
+      height: 100vh;
+      aspect-ratio: 16 / 9;
+      max-width: calc(100vh * 16 / 9);
+      max-height: calc(100vw * 9 / 16);
+      margin: auto;
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 74px 1fr;
+    }
+
+    header {
+      padding: 9px 24px 7px;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      font-weight: 800;
+    }
+
+    .instructions {
+      margin: 5px 0 0;
+      font-size: 14px;
+      color: #243244;
+      font-weight: 700;
+      line-height: 1.18;
+      animation: instructionFloat 1.1s ease-out both;
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 6px;
+      background: #f1f5f9;
+      border: 1px solid #dbe3ee;
+      border-radius: 999px;
+      padding: 4px;
+      flex: 0 0 auto;
+      margin-top: 1px;
+    }
+
+    .mode-button {
+      border: 0;
+      background: transparent;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 850;
+      color: #475569;
+      cursor: pointer;
+    }
+
+    .mode-button:hover,
+    .mode-button:focus-visible {
+      color: var(--blue-dark);
+      outline: none;
+    }
+
+    .mode-button.active {
+      background: #ffffff;
+      color: var(--blue-dark);
+      box-shadow: 0 1px 5px rgba(15, 23, 42, 0.12);
+    }
+
+    @keyframes instructionFloat {
+      0% { opacity: 0; transform: translateY(10px); }
+      70% { opacity: 1; transform: translateY(-2px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .main {
+      min-height: 0;
+      padding: 9px 13px 11px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 12px;
+    }
+
+    .diagram-card,
+    .info-card {
+      border-radius: 0;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      overflow: hidden;
+    }
+
+    .diagram-card {
+      border-radius: 14px;
+      padding: 8px;
+      display: flex;
+    }
+
+    .image-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      border: 1px solid #eef2f7;
+      background: #ffffff;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .image-canvas {
+      position: relative;
+      height: 100%;
+      aspect-ratio: var(--image-ratio, 1344 / 1024);
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .image-canvas img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .marker {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      transform: translate(-50%, -50%);
+      width: var(--marker-size);
+      height: var(--marker-size);
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.95);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.26);
+      z-index: 2;
+      cursor: pointer;
+      transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+
+    .marker:hover,
+    .marker:focus-visible {
+      background: var(--blue-dark);
+      transform: translate(-50%, -50%) scale(1.1);
+      outline: none;
+    }
+
+    .marker.selected {
+      background: var(--green);
+      box-shadow: 0 0 0 5px rgba(22,163,74,0.18), 0 4px 10px rgba(0,0,0,0.26);
+    }
+
+    .marker.viewed:not(.selected) {
+      background: #64748b;
+    }
+
+    .info-card {
+      border-radius: 0;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .info-card.cns-mode {
+      gap: 10px;
+    }
+
+    .panel-label {
+      display: none;
+    }
+
+    .structure-title {
+      margin: 0 0 2px;
+      font-size: 22px;
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      font-weight: 850;
+    }
+
+    .summary-box {
+      border: 1px solid #dbe3ee;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 9px 10px;
+      font-size: 14px;
+      line-height: 1.22;
+      color: #1f2937;
+      min-height: auto;
+    }
+
+    .info-card.cns-mode .summary-box {
+      font-size: 15px;
+      line-height: 1.28;
+      padding: 11px 12px;
+    }
+
+    .memory-hook {
+      margin-top: 6px;
+      padding: 6px 8px;
+      border-radius: 9px;
+      background: var(--amber-soft);
+      border: 1px solid #fcd34d;
+      color: #7c2d12;
+      font-size: 12px;
+      line-height: 1.15;
+      font-weight: 750;
+    }
+
+    .info-card.cns-mode .memory-hook {
+      margin-top: 8px;
+      padding: 7px 9px;
+    }
+
+    .quiz-card {
+      border: 1px solid #dbe3ee;
+      border-radius: 14px;
+      padding: 8px 9px;
+      background: #ffffff;
+      display: grid;
+      gap: 5px;
+      align-content: start;
+      flex: 0 0 auto;
+      overflow: visible;
+    }
+
+    .quiz-card.hidden {
+      display: none;
+    }
+
+    .quiz-title {
+      display: none;
+    }
+
+    .answer-instruction {
+      display: none;
+    }
+
+    .quiz-question {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.18;
+      font-weight: 500;
+      font-style: italic;
+    }
+
+    .answers {
+      display: grid;
+      gap: 5px;
+    }
+
+    .answer-button {
+      border: 2px solid #bfdbfe;
+      background: #ffffff;
+      color: #374151;
+      border-radius: 10px;
+      padding: 6px 8px;
+      text-align: left;
+      font-family: inherit;
+      font-size: 12.5px;
+      line-height: 1.08;
+      font-weight: 750;
+      cursor: pointer;
+      position: relative;
+      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
+    }
+
+    .answer-button:hover,
+    .answer-button:focus-visible {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .answer-button.correct {
+      border-color: #22c55e;
+      background: var(--green-soft);
+      color: #166534;
+    }
+
+    .answer-button.incorrect {
+      border-color: #fca5a5;
+      background: var(--red-soft);
+      color: #991b1b;
+    }
+
+    .feedback {
+      min-height: 12px;
+      font-size: 11.5px;
+      font-weight: 750;
+      color: var(--muted);
+    }
+
+    .feedback.good { color: #166534; }
+    .feedback.bad { color: #991b1b; }
+
+    .structure-nav {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 5px;
+      display: grid;
+      gap: 4px;
+      flex: 0 0 auto;
+    }
+
+    .info-card.cns-mode .structure-nav {
+      margin-top: 4px;
+    }
+
+    .nav-title {
+      margin: 0;
+      font-size: 12px;
+      color: #374151;
+      font-weight: 850;
+    }
+
+    .nav-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+    }
+
+    .nav-button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 999px;
+      padding: 5px 7px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 850;
+      color: #374151;
+      cursor: pointer;
+      line-height: 1.05;
+    }
+
+    .nav-button:hover,
+    .nav-button:focus-visible,
+    .nav-button.active {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      color: var(--blue-dark);
+      outline: none;
+    }
+
+    .footer-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      margin-top: auto;
+      flex: 0 0 auto;
+    }
+
+    .action-button {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-weight: 850;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    .action-button:hover,
+    .action-button:focus-visible {
+      border-color: var(--blue);
+      color: var(--blue-dark);
+      outline: none;
+    }
+
+    .progress {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 750;
+    }
+
+    .completion-panel {
+      display: none;
+      border: 1px solid #86efac;
+      background: var(--green-soft);
+      border-radius: 12px;
+      padding: 8px 10px;
+      animation: fadeIn 0.35s ease-out both;
+      flex: 0 0 auto;
+      max-height: 92px;
+      overflow: hidden;
+    }
+
+    .completion-panel.show {
+      display: block;
+    }
+
+    .completion-panel h3 {
+      margin: 0 0 3px;
+      font-size: 17px;
+      letter-spacing: -0.025em;
+    }
+
+    .completion-panel p {
+      margin: 0;
+      color: #166534;
+      line-height: 1.18;
+      font-size: 12.5px;
+      font-weight: 650;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 1050px) {
+      .slide-stage { grid-template-rows: 72px 1fr; }
+      .main { grid-template-columns: minmax(0, 1fr) 400px; gap: 12px; }
+      h1 { font-size: 25px; }
+      .instructions { font-size: 13.5px; }
+      .mode-button { font-size: 12px; padding: 6px 9px; }
+      .structure-title { font-size: 24px; }
+      .summary-box { font-size: 14px; }
+      .quiz-question { font-size: 14px; }
+      .answer-button { font-size: 12.5px; padding: 7px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="slide-stage">
+    <header>
+      <div class="header-row">
+        <div>
+          <h1 id="activityTitle">Brain Structure Detective</h1>
+          <p class="instructions" id="activityInstructions">Click each number to reveal the brain structure, its job, and a quick check question.</p>
+        </div>
+        <div class="mode-toggle" aria-label="Choose activity mode">
+          <button class="mode-button active" id="brainModeButton" type="button">Brain Structures</button>
+          <button class="mode-button" id="cnsModeButton" type="button">CNS Protection</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="main" aria-label="Brain and central nervous system click-to-reveal activity">
+      <div class="diagram-card">
+        <div class="image-stage">
+          <div class="image-canvas" id="imageStage">
+            <img
+              id="mainImage"
+              src="brain-structures.png"
+              alt="Sagittal brain diagram."
+            />
+          </div>
+        </div>
+      </div>
+
+      <aside class="info-card" id="infoCard" aria-live="polite">
+        <div>
+          <div class="panel-label" id="panelLabel">Selected structure</div>
+          <h2 class="structure-title" id="structureTitle">Choose a number</h2>
+        </div>
+
+        <div class="summary-box" id="summaryBox">
+          Click a numbered marker on the brain diagram to reveal what that structure is and what it does.
+        </div>
+
+        <div class="quiz-card" id="quizCard">
+          <p class="quiz-title" aria-hidden="true"></p>
+          <p class="answer-instruction" id="answerInstruction">Choose one answer below.</p>
+          <p class="quiz-question" id="quizQuestion">Choose a structure to begin.</p>
+          <div class="answers" id="answers"></div>
+          <div class="feedback" id="feedback"></div>
+        </div>
+
+        <div class="structure-nav">
+          <p class="nav-title" id="navTitle">Structures to explore</p>
+          <div class="nav-buttons" id="navButtons"></div>
+        </div>
+
+        <div class="completion-panel" id="completionPanel">
+          <h3>Great work!</h3>
+          <p id="completionText">You explored the major brain structures and connected each one to its function.</p>
+        </div>
+
+        <div class="footer-actions">
+          <button class="action-button" id="resetButton" type="button">Reset</button>
+          <div class="progress" id="progressText">0 of 7 explored</div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const brainStructures = [
+      {
+        id: 1,
+        name: "Cerebrum",
+        x: "52.5%",
+        y: "13.0%",
+        summary: "The <strong>cerebrum</strong> is the largest part of the brain. It is involved in thinking, memory, senses, decision-making, and voluntary movement.",
+        hook: "Memory hook: cerebrum = conscious control and thinking.",
+        question: "Which function best matches the cerebrum?",
+        choices: ["Conscious thought and voluntary movement", "Filtering blood", "Producing digestive enzymes"],
+        correct: 0
+      },
+      {
+        id: 2,
+        name: "Corpus callosum",
+        x: "56.0%",
+        y: "28.0%",
+        summary: "The <strong>corpus callosum</strong> is a thick band of nerve fibres that connects the left and right cerebral hemispheres.",
+        hook: "Memory hook: corpus callosum = communication bridge.",
+        question: "What does the corpus callosum help do?",
+        choices: ["Connect the two sides of the brain", "Control pupil size", "Move food through the intestines"],
+        correct: 0
+      },
+      {
+        id: 3,
+        name: "Hypothalamus region",
+        x: "52.5%",
+        y: "42.5%",
+        summary: "The <strong>hypothalamus</strong> helps regulate body conditions such as temperature, hunger, thirst, and hormone signalling.",
+        hook: "Memory hook: hypothalamus = body balance.",
+        question: "Which job fits the hypothalamus region?",
+        choices: ["Regulating body balance and hormones", "Storing bile", "Pumping blood"],
+        correct: 0
+      },
+      {
+        id: 4,
+        name: "Pituitary gland",
+        x: "57.5%",
+        y: "55.0%",
+        summary: "The <strong>pituitary gland</strong> releases hormones that help control growth, reproduction, metabolism, and other body processes.",
+        hook: "Memory hook: pituitary = master hormone gland.",
+        question: "The pituitary gland is most connected to:",
+        choices: ["Hormone release", "Balance and coordination", "Air exchange in the lungs"],
+        correct: 0
+      },
+      {
+        id: 5,
+        name: "Cerebellum",
+        x: "35.5%",
+        y: "68.0%",
+        summary: "The <strong>cerebellum</strong> helps coordinate balance, posture, and smooth muscle movement.",
+        hook: "Memory hook: cerebellum = coordination.",
+        question: "Damage to the cerebellum would most likely affect:",
+        choices: ["Balance and coordination", "Urine production", "The sense of smell only"],
+        correct: 0
+      },
+      {
+        id: 6,
+        name: "Brainstem / medulla",
+        x: "46.8%",
+        y: "69.5%",
+        summary: "The <strong>brainstem</strong>, including the medulla, connects the brain to the spinal cord and helps control vital automatic functions such as breathing and heart rate.",
+        hook: "Memory hook: brainstem = basic survival functions.",
+        question: "Which function is strongly linked to the brainstem?",
+        choices: ["Breathing and heart rate", "Conscious essay writing", "Digesting proteins in the stomach"],
+        correct: 0
+      },
+      {
+        id: 7,
+        name: "Spinal cord",
+        x: "44.0%",
+        y: "87.0%",
+        summary: "The <strong>spinal cord</strong> carries messages between the brain and the rest of the body.",
+        hook: "Memory hook: spinal cord = message highway.",
+        question: "The spinal cord mainly helps:",
+        choices: ["Carry signals between brain and body", "Make hormones", "Store memories"],
+        correct: 0
+      }
+    ];
+
+    const cnsStructures = [
+      {
+        id: 1,
+        name: "Brain",
+        x: "47.0%",
+        y: "12.0%",
+        summary: "The <strong>brain</strong> is the control centre of the central nervous system. It processes information, coordinates responses, and sends instructions through the spinal cord and nerves. The skull and meninges help protect this delicate tissue.",
+        hook: "Key idea: brain = control centre."
+      },
+      {
+        id: 2,
+        name: "Meninges",
+        x: "56.0%",
+        y: "7.5%",
+        summary: "The <strong>meninges</strong> are protective membranes that surround the brain and spinal cord. They add a protective layer between the soft nervous tissue and the bones around it.",
+        hook: "Key idea: meninges = protective covering."
+      },
+      {
+        id: 3,
+        name: "Vertebrae",
+        x: "55.0%",
+        y: "47.0%",
+        summary: "The <strong>vertebrae</strong> are the bones of the spine. They form a protective column around the spinal cord while still allowing the back and neck to bend and move.",
+        hook: "Key idea: vertebrae = bony protection."
+      },
+      {
+        id: 4,
+        name: "Spinal cord",
+        x: "45.0%",
+        y: "50.5%",
+        summary: "The <strong>spinal cord</strong> carries messages between the brain and the rest of the body. It runs through the vertebral column, where the vertebrae and meninges help protect it from injury.",
+        hook: "Key idea: spinal cord = message pathway."
+      }
+    ];
+
+    const modes = {
+      brain: {
+        title: "Brain Structure Detective",
+        instructions: "Click each number to reveal the brain structure, its job, and a quick check question.",
+        image: "brain-structures.png",
+        imageAlt: "Sagittal brain diagram.",
+        ratio: "1344 / 1024",
+        panelLabel: "Selected structure",
+        navTitle: "Structures to explore",
+        startTitle: "Choose a number",
+        startSummary: "Click a numbered marker on the brain diagram to reveal what that structure is and what it does.",
+        startQuestion: "Choose a structure to begin.",
+        completion: "You explored the major brain structures and connected each one to its function.",
+        showQuiz: true,
+        items: brainStructures
+      },
+      cns: {
+        title: "CNS Protection Detective",
+        instructions: "Click each number to explore how the brain and spinal cord are protected.",
+        image: "spinal-structure.png",
+        imageAlt: "Brain, spinal cord, meninges, and vertebrae diagram.",
+        ratio: "1024 / 1792",
+        panelLabel: "Selected part",
+        navTitle: "Parts to explore",
+        startTitle: "Choose a number",
+        startSummary: "Click a numbered marker on the CNS diagram to reveal the part and how it helps protect or support the nervous system.",
+        startQuestion: "No quiz for this section — click each number to reveal the key idea.",
+        completion: "You explored how the brain and spinal cord are protected by membranes and bones.",
+        showQuiz: false,
+        items: cnsStructures
+      }
+    };
+
+    const activityTitle = document.getElementById("activityTitle");
+    const activityInstructions = document.getElementById("activityInstructions");
+    const brainModeButton = document.getElementById("brainModeButton");
+    const cnsModeButton = document.getElementById("cnsModeButton");
+    const imageStage = document.getElementById("imageStage");
+    const mainImage = document.getElementById("mainImage");
+    const infoCard = document.getElementById("infoCard");
+    const panelLabel = document.getElementById("panelLabel");
+    const structureTitle = document.getElementById("structureTitle");
+    const summaryBox = document.getElementById("summaryBox");
+    const quizCard = document.getElementById("quizCard");
+    const quizQuestion = document.getElementById("quizQuestion");
+    const answerInstruction = document.getElementById("answerInstruction");
+    const answers = document.getElementById("answers");
+    const feedback = document.getElementById("feedback");
+    const navTitle = document.getElementById("navTitle");
+    const navButtons = document.getElementById("navButtons");
+    const progressText = document.getElementById("progressText");
+    const resetButton = document.getElementById("resetButton");
+    const completionPanel = document.getElementById("completionPanel");
+    const completionText = document.getElementById("completionText");
+
+    let activeMode = "brain";
+    let viewed = new Set();
+    let answered = new Set();
+    let selectedId = null;
+
+    function createMarkers(items) {
+      imageStage.querySelectorAll(".marker").forEach(marker => marker.remove());
+
+      items.forEach(item => {
+        const button = document.createElement("button");
+        button.className = "marker";
+        button.type = "button";
+        button.textContent = item.id;
+        button.style.setProperty("--x", item.x);
+        button.style.setProperty("--y", item.y);
+        button.dataset.structureId = item.id;
+        button.setAttribute("aria-label", `Show ${item.id}: ${item.name}`);
+        button.addEventListener("click", () => selectItem(item.id));
+        imageStage.appendChild(button);
+      });
+    }
+
+    function createNavButtons(items) {
+      navButtons.innerHTML = "";
+      items.forEach(item => {
+        const button = document.createElement("button");
+        button.className = "nav-button";
+        button.type = "button";
+        button.textContent = String(item.id);
+        button.dataset.structureId = item.id;
+        button.setAttribute("aria-label", `Show ${item.name}`);
+        button.addEventListener("click", () => selectItem(item.id));
+        navButtons.appendChild(button);
+      });
+    }
+
+    function selectItem(id) {
+      const mode = modes[activeMode];
+      const item = mode.items.find(structure => structure.id === id);
+      if (!item) return;
+
+      selectedId = id;
+      viewed.add(id);
+
+      structureTitle.textContent = `${item.id}. ${item.name}`;
+      summaryBox.innerHTML = `${item.summary}<div class="memory-hook">${item.hook}</div>`;
+      feedback.textContent = "";
+      feedback.className = "feedback";
+
+      if (mode.showQuiz) {
+        quizCard.classList.remove("hidden");
+        quizQuestion.textContent = item.question;
+        answerInstruction.textContent = "";
+        answers.innerHTML = "";
+        item.choices.forEach((choice, index) => {
+          const button = document.createElement("button");
+          button.className = "answer-button";
+          button.type = "button";
+          button.textContent = choice;
+          button.addEventListener("click", () => checkAnswer(item, index));
+          answers.appendChild(button);
+        });
+      } else {
+        quizCard.classList.add("hidden");
+        quizQuestion.textContent = mode.startQuestion;
+        answerInstruction.textContent = "";
+        answers.innerHTML = "";
+      }
+
+      document.querySelectorAll(".marker").forEach(button => {
+        const buttonId = Number(button.dataset.structureId);
+        button.classList.toggle("selected", buttonId === id);
+        button.classList.toggle("viewed", viewed.has(buttonId));
+      });
+
+      document.querySelectorAll(".nav-button").forEach(button => {
+        const buttonId = Number(button.dataset.structureId);
+        button.classList.toggle("active", buttonId === id);
+      });
+
+      updateProgress();
+    }
+
+    function checkAnswer(item, selectedIndex) {
+      const buttons = Array.from(answers.querySelectorAll(".answer-button"));
+      buttons.forEach((button, index) => {
+        button.disabled = true;
+        if (index === item.correct) button.classList.add("correct");
+        if (index === selectedIndex && index !== item.correct) button.classList.add("incorrect");
+      });
+
+      if (selectedIndex === item.correct) {
+        feedback.textContent = "Correct!";
+        feedback.className = "feedback good";
+      } else {
+        feedback.textContent = "Good try — review the highlighted correct answer.";
+        feedback.className = "feedback bad";
+      }
+
+      answered.add(item.id);
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const mode = modes[activeMode];
+      progressText.textContent = `${viewed.size} of ${mode.items.length} explored`;
+      completionPanel.classList.toggle("show", viewed.size === mode.items.length);
+    }
+
+    function setMode(modeKey) {
+      activeMode = modeKey;
+      const mode = modes[activeMode];
+
+      activityTitle.textContent = mode.title;
+      activityInstructions.textContent = mode.instructions;
+      mainImage.src = mode.image;
+      mainImage.alt = mode.imageAlt;
+      imageStage.style.setProperty("--image-ratio", mode.ratio);
+      infoCard.classList.toggle("cns-mode", modeKey === "cns");
+      panelLabel.textContent = mode.panelLabel;
+      navTitle.textContent = mode.navTitle;
+      completionText.textContent = mode.completion;
+
+      brainModeButton.classList.toggle("active", modeKey === "brain");
+      cnsModeButton.classList.toggle("active", modeKey === "cns");
+
+      createMarkers(mode.items);
+      createNavButtons(mode.items);
+      resetInteractive();
+    }
+
+    function resetInteractive() {
+      const mode = modes[activeMode];
+      viewed = new Set();
+      answered = new Set();
+      selectedId = null;
+      structureTitle.textContent = mode.startTitle;
+      summaryBox.innerHTML = mode.startSummary;
+      quizQuestion.textContent = mode.startQuestion;
+      answerInstruction.textContent = "";
+      answers.innerHTML = "";
+      feedback.textContent = "";
+      feedback.className = "feedback";
+      completionPanel.classList.remove("show");
+      quizCard.classList.toggle("hidden", !mode.showQuiz);
+
+      document.querySelectorAll(".selected, .viewed, .active").forEach(element => {
+        if (!element.classList.contains("mode-button")) {
+          element.classList.remove("selected", "viewed", "active");
+        }
+      });
+
+      brainModeButton.classList.toggle("active", activeMode === "brain");
+      cnsModeButton.classList.toggle("active", activeMode === "cns");
+      updateProgress();
+    }
+
+    brainModeButton.addEventListener("click", () => setMode("brain"));
+    cnsModeButton.addEventListener("click", () => setMode("cns"));
+    resetButton.addEventListener("click", resetInteractive);
+
+    setMode("brain");
+  </script>
+</body>
+</html>

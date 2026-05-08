@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hypothalamus-Pituitary Hormone Pathways</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #d1d5db;
+      --panel: #ffffff;
+      --bg: #f8fafc;
+      --line: rgba(71, 85, 105, 0.82);
+      --line-correct: rgba(22, 163, 74, 0.88);
+      --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+      --marker-size: 28px;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      background: #eef2f7;
+      color: var(--text);
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    .slide-stage {
+      width: 100vw;
+      height: 100vh;
+      aspect-ratio: 16 / 9;
+      max-width: calc(100vh * 16 / 9);
+      max-height: calc(100vw * 9 / 16);
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      overflow: hidden;
+      background: var(--bg);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 14px 22px 12px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 0 0 5px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      font-weight: 850;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      font-size: 14px;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .instruction-line {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: #1f2937;
+      font-weight: 700;
+    }
+
+    .content {
+      min-height: 0;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) clamp(260px, 34vw, 430px);
+      gap: 12px;
+    }
+
+    .left-panel,
+    .right-panel {
+      min-height: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .left-panel {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      padding: 10px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tab-button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #1f2937;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .tab-button.active {
+      background: var(--blue-soft);
+      border-color: #93c5fd;
+      color: var(--blue-dark);
+    }
+
+    .tab-button.complete:not(.active) {
+      border-color: #86efac;
+      color: #166534;
+      background: #f0fdf4;
+    }
+
+    .diagram-shell {
+      min-height: 0;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+
+    .image-canvas {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 1341 / 1173;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .main-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .leader-lines,
+    .overlay-layer,
+    .debug-grid {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .overlay-layer {
+      z-index: 4;
+    }
+
+    .debug-grid { display: none; }
+    .debug-mode .debug-grid { display: block; }
+
+    .debug-grid line {
+      stroke: rgba(37, 99, 235, 0.18);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .debug-grid text {
+      fill: rgba(37, 99, 235, 0.75);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .leader-line {
+      stroke: var(--line);
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+      transition: opacity 0.18s ease, stroke 0.18s ease;
+    }
+
+    .leader-line.correct { stroke: var(--line-correct); }
+    .leader-dot {
+      fill: #ffffff;
+      stroke: var(--line);
+      stroke-width: 1.4;
+      vector-effect: non-scaling-stroke;
+      transition: opacity 0.18s ease, stroke 0.18s ease, fill 0.18s ease;
+    }
+
+    .leader-dot.correct {
+      fill: var(--green-soft);
+      stroke: #16a34a;
+    }
+
+    .marker {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      transform: translate(-50%, -50%);
+      width: var(--marker-size);
+      height: var(--marker-size);
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      background: rgba(37, 99, 235, 0.96);
+      color: #ffffff;
+      font-weight: 900;
+      font-size: 13px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
+      z-index: 4;
+      transition: background 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .marker.correct {
+      background: #16a34a;
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12), 0 4px 12px rgba(15, 23, 42, 0.22);
+    }
+
+    .marker.highlight {
+      box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.14), 0 4px 12px rgba(15, 23, 42, 0.22);
+    }
+
+    .marker-label,
+    .target-label {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      display: none;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: #334155;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .debug-mode .marker-label,
+    .debug-mode .target-label {
+      display: block;
+    }
+
+    .coord-readout {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      z-index: 8;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(148, 163, 184, 0.72);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+      display: none;
+    }
+
+    .debug-mode .coord-readout { display: block; }
+
+    .thumb-strip {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      z-index: 7;
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+      max-width: calc(100% - 28px);
+      pointer-events: none;
+    }
+
+    .thumb-card {
+      display: none;
+      min-width: 82px;
+      max-width: 112px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(203, 213, 225, 0.9);
+      border-radius: 12px;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+      overflow: hidden;
+    }
+
+    .thumb-card.visible { display: block; }
+
+    .thumb-card img {
+      display: block;
+      width: 100%;
+      height: 70px;
+      object-fit: cover;
+      background: #f8fafc;
+    }
+
+    .thumb-card div {
+      padding: 6px 8px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+      line-height: 1.15;
+    }
+
+    .right-panel {
+      padding: 14px 14px 12px;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      gap: 10px;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .score {
+      font-size: 18px;
+      font-weight: 900;
+      color: #0f172a;
+    }
+
+    .part-count {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .prompt-block h2 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+      font-weight: 850;
+    }
+
+    .prompt-block p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      line-height: 1.35;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .status-banner {
+      min-height: 38px;
+      border-radius: 12px;
+      border: 1px solid #dbeafe;
+      background: #f8fbff;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.3;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+
+    .status-banner.success {
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .status-banner.error {
+      border-color: #fecaca;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .matching-board {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 1fr;
+      gap: 12px;
+      align-content: start;
+      overflow: auto;
+      grid-row: 4;
+    }
+
+    .column-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .labels-column,
+    .slots-column {
+      min-height: 0;
+    }
+
+    .label-list,
+    .slot-list {
+      display: grid;
+      gap: 7px;
+      align-content: start;
+    }
+
+    .label-chip {
+      border: 1px solid #cbd5e1;
+      border-radius: 13px;
+      background: #ffffff;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1f2937;
+      line-height: 1.18;
+      cursor: grab;
+      user-select: none;
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.04);
+      transition: transform 0.12s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .label-chip:active { cursor: grabbing; }
+    .label-chip.dragging { opacity: 0.5; transform: scale(0.98); }
+    .label-chip.selected {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .label-chip.correct {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: #166534;
+      cursor: default;
+    }
+
+    .slot-row {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .slot-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.96);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 900;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
+    }
+
+    .slot-number.correct {
+      background: #16a34a;
+    }
+
+    .drop-slot {
+      min-height: 38px;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      padding: 8px 11px;
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      line-height: 1.2;
+      font-weight: 700;
+      color: #94a3b8;
+      transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    }
+
+    .drop-slot.over {
+      border-color: #60a5fa;
+      background: #eff6ff;
+    }
+
+    .drop-slot.filled {
+      color: #1f2937;
+      background: #ffffff;
+    }
+
+    .drop-slot.correct {
+      border-color: #22c55e;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .drop-slot.shake,
+    .label-chip.shake {
+      animation: shake 0.32s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+      75% { transform: translateX(-3px); }
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+    }
+
+    .button.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #ffffff;
+    }
+
+    .button.success {
+      background: #f0fdf4;
+      border-color: #86efac;
+      color: #166534;
+    }
+
+    .button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .wrapup-panel {
+      display: none;
+      min-height: 0;
+      grid-row: 4;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 10px;
+    }
+
+    .wrapup-panel.active {
+      display: grid;
+    }
+
+    .wrapup-title {
+      font-size: 18px;
+      font-weight: 850;
+      margin: 0;
+    }
+
+    .wrapup-subtitle {
+      margin: 4px 0 0;
+      font-size: 12px;
+      line-height: 1.35;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .note-card {
+      border: 1px solid #dbeafe;
+      background: #f8fbff;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #1f2937;
+      overflow: auto;
+    }
+
+    .note-meta {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .wrapup-controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .quiz-panel {
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      grid-row: 4;
+    }
+
+    .quiz-meta {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .quiz-image-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .quiz-image {
+      max-height: 110px;
+      max-width: 60%;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      padding: 6px;
+    }
+
+    .quiz-question {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .quiz-options {
+      display: grid;
+      gap: 7px;
+    }
+
+    .quiz-option {
+      border: 2px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 10px 13px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #1f2937;
+      text-align: left;
+      cursor: pointer;
+      line-height: 1.3;
+      transition: border-color 0.14s, background 0.14s;
+    }
+
+    .quiz-option:hover:not(:disabled) {
+      border-color: #60a5fa;
+      background: #eff6ff;
+    }
+
+    .quiz-option.correct {
+      border-color: #22c55e;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .quiz-option.wrong {
+      border-color: #f87171;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .quiz-option:disabled { cursor: default; }
+
+    .quiz-explanation {
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #7f1d1d;
+    }
+
+    .quiz-explanation.correct-exp {
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+      color: #14532d;
+    }
+
+    .quiz-result {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 20px 0 10px;
+    }
+
+    .quiz-score-big {
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1;
+      color: #0f172a;
+    }
+
+    .quiz-score-label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .quiz-controls {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: auto;
+      padding-top: 4px;
+    }
+
+    .edit-panel {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      background: rgba(15, 23, 42, 0.93);
+      color: #f1f5f9;
+      border-radius: 12px 12px 0 0;
+      padding: 8px 16px 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.22);
+      white-space: nowrap;
+    }
+
+    .edit-panel-label {
+      color: #fbbf24;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .edit-panel button {
+      border: 1px solid rgba(148,163,184,0.45);
+      background: rgba(255,255,255,0.09);
+      color: #f1f5f9;
+      border-radius: 8px;
+      padding: 5px 11px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.14s;
+    }
+
+    .edit-panel button:hover { background: rgba(255,255,255,0.18); }
+    .edit-panel button.flash { background: rgba(74,222,128,0.22); color: #4ade80; }
+
+    .edit-status {
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      min-width: 220px;
+    }
+
+    @media (max-width: 1220px) {
+      .content {
+        grid-template-columns: minmax(0, 1fr) clamp(250px, 35vw, 380px);
+      }
+      h1 { font-size: 24px; }
+      .right-panel { padding: 12px; }
+    }
+
+    @media (max-aspect-ratio: 16/9) {
+      .slide-stage {
+        width: 100vw;
+        height: 100vh;
+        max-width: none;
+        max-height: none;
+        aspect-ratio: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-stage">
+    <header>
+      <p class="eyebrow">Biology Sample: A2 Endocrine System</p>
+      <h1>Hypothalamus-Pituitary Hormone Pathways</h1>
+      <p class="subtitle">Match each structure or hormone pathway to the correct numbered location.</p>
+      <p class="instruction-line">Drag each label into the matching numbered box, or click a label and then click its numbered box. Correct answers turn green and lock in place.</p>
+    </header>
+
+    <div class="content">
+      <section class="left-panel">
+        <div class="tabs" id="tabs"></div>
+
+        <div class="diagram-shell">
+          <div class="image-canvas" id="imageCanvas" aria-label="Hypothalamus-pituitary hormone pathway diagram">
+            <img class="main-image" src="no_text.png" alt="Diagram of the hypothalamus-pituitary hormone pathways." />
+
+            <svg class="debug-grid" id="debugGrid" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <svg class="leader-lines" id="leaderLines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="overlay-layer" id="overlayLayer" aria-hidden="true"></div>
+
+            <div class="coord-readout" id="coordReadout">x: 0.0%, y: 0.0%</div>
+            <div class="thumb-strip" id="thumbStrip"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="right-panel">
+        <div class="score-row">
+          <div class="score" id="scoreText">Score: 0/13</div>
+          <div class="part-count" id="partCountText">Part 1 of 3</div>
+        </div>
+
+        <div class="prompt-block" id="promptBlock">
+          <h2 id="partTitle">Part 1</h2>
+          <p id="partInstruction"></p>
+        </div>
+
+        <div class="status-banner" id="statusBanner">
+          Match the labels for this part. Only the current tab’s hotspots are shown.
+        </div>
+
+        <div class="matching-board" id="matchingBoard">
+          <div class="labels-column">
+            <div class="column-title">Labels</div>
+            <div class="label-list" id="labelList"></div>
+          </div>
+          <div class="slots-column">
+            <div class="column-title">Matching boxes</div>
+            <div class="slot-list" id="slotList"></div>
+          </div>
+        </div>
+
+        <div class="wrapup-panel" id="wrapupPanel">
+          <div>
+            <div class="note-meta" id="noteMeta">Note 1 of 6</div>
+            <h2 class="wrapup-title">Wrap-Up / Study Notes</h2>
+            <p class="wrapup-subtitle">Use these quick notes to connect the diagram to the big pathway ideas.</p>
+          </div>
+          <div class="status-banner success" id="wrapupStatus">All 13 matches are complete.</div>
+          <div class="note-card" id="noteCard"></div>
+          <div class="wrapup-controls">
+            <button class="button" id="wrapPrev">Back</button>
+            <button class="button" id="wrapExit">Close Wrap-Up</button>
+            <button class="button primary" id="wrapNext">Next</button>
+          </div>
+        </div>
+
+        <div class="quiz-panel hidden" id="quizPanel"></div>
+
+        <div class="controls" id="controls">
+          <button class="button" id="shuffleBtn">Shuffle labels</button>
+          <button class="button" id="answerKeyBtn">Show answer key</button>
+          <button class="button" id="resetBtn">Reset Part</button>
+          <button class="button primary hidden" id="wrapupBtn">Wrap-Up</button>
+          <button class="button hidden" id="quizBtn">Take Quiz</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const debugMode = params.get("debug") === "1";
+    const debugAll = params.get("debugAll") === "1";
+    const editMode = params.get("edit") === "1";
+    let editStatusEl = null;
+
+    const hotspotTargets = {
+      hypothalamus: { tx: 52, ty: 5, shape: "dot", label: "Hypothalamus" },
+      posterior_pathway: { tx: 44, ty: 43, shape: "dot", label: "Posterior pituitary pathway" },
+      portal_system: { tx: 53.3, ty: 32.8, shape: "dot", label: "Portal system" },
+      anterior_pathway: { tx: 59, ty: 48, shape: "dot", label: "Anterior pituitary pathway" },
+      adh_kidney: { tx: 17.5, ty: 63.1, shape: "oval", rx: 0.7, ry: 0.45, label: "ADH -> kidney tubules" },
+      oxytocin_uterus: { tx: 20.2, ty: 84.5, shape: "oval", rx: 0.7, ry: 0.45, label: "Oxytocin -> uterus" },
+      oxytocin_mammary: { tx: 31.5, ty: 87.2, shape: "oval", rx: 0.65, ry: 0.45, label: "Oxytocin -> mammary glands" },
+      posterior_blood: { tx: 44, ty: 51, shape: "dot", label: "Posterior pituitary -> blood" },
+      tsh_thyroid: { tx: 46, ty: 86, shape: "oval", rx: 0.6, ry: 0.42, label: "TSH -> thyroid" },
+      acth_adrenal: { tx: 60, ty: 86, shape: "oval", rx: 0.6, ry: 0.42, label: "ACTH -> adrenal cortex" },
+      prl_mammary: { tx: 70, ty: 84.9, shape: "oval", rx: 0.6, ry: 0.42, label: "PRL -> mammary gland" },
+      fsh_gonads: { tx: 81.9, ty: 63.6, shape: "oval", rx: 0.65, ry: 0.42, label: "FSH/LH -> ovaries or testes" },
+      hgh_tissues: { tx: 77.5, ty: 85.9, shape: "oval", rx: 0.65, ry: 0.42, label: "hGH -> bones and tissues" }
+    };
+
+    const activityParts = [
+      {
+        id: "part1",
+        tabLabel: "Big Pathways",
+        title: "Part 1: Two Pituitary Pathways",
+        instruction: "Match the major structures and pathways in the hypothalamus-pituitary system.",
+        completionMessage: "Great job. The hypothalamus communicates with the posterior pituitary through nerve axons and with the anterior pituitary through the portal blood system.",
+        items: [
+          { id: "hypothalamus", label: "Hypothalamus", target: "hypothalamus", marker: { x: 82, y: 4.4 }, slotNumber: 1 },
+          { id: "posterior_pathway", label: "Posterior pituitary pathway", target: "posterior_pathway", marker: { x: 12.7, y: 33.4 }, slotNumber: 2 },
+          { id: "portal_system", label: "Portal system", target: "portal_system", marker: { x: 84.5, y: 19.7 }, slotNumber: 3 },
+          { id: "anterior_pathway", label: "Anterior pituitary pathway", target: "anterior_pathway", marker: { x: 86.6, y: 48.7 }, slotNumber: 4 }
+        ]
+      },
+      {
+        id: "part2",
+        tabLabel: "Posterior Pituitary",
+        title: "Part 2: Posterior Pituitary Hormones",
+        instruction: "Match the posterior pituitary hormones with their target organs.",
+        completionMessage: "Great job. The posterior pituitary releases ADH and oxytocin into the bloodstream after these hormones travel down axons from the hypothalamus.",
+        items: [
+          { id: "adh_kidney", label: "ADH -> kidney tubules", target: "adh_kidney", marker: { x: 7.5, y: 61.6 }, slotNumber: 1 },
+          { id: "oxytocin_uterus", label: "Oxytocin -> uterus", target: "oxytocin_uterus", marker: { x: 10.5, y: 86.4 }, slotNumber: 2 },
+          { id: "oxytocin_mammary", label: "Oxytocin -> mammary glands", target: "oxytocin_mammary", marker: { x: 12.3, y: 94.3 }, slotNumber: 3 },
+          { id: "posterior_blood", label: "Posterior pituitary -> blood", target: "posterior_blood", marker: { x: 8.4, y: 49.4 }, slotNumber: 4 }
+        ]
+      },
+      {
+        id: "part3",
+        tabLabel: "Anterior Pituitary",
+        title: "Part 3: Anterior Pituitary Hormones",
+        instruction: "Match each anterior pituitary hormone with its main target.",
+        completionMessage: "Great job. The anterior pituitary releases hormones that travel through the bloodstream to target glands, organs, bones, and tissues.",
+        items: [
+          { id: "tsh_thyroid", label: "TSH -> thyroid", target: "tsh_thyroid", marker: { x: 44.3, y: 74.1 }, slotNumber: 1 },
+          { id: "acth_adrenal", label: "ACTH -> adrenal cortex", target: "acth_adrenal", marker: { x: 59.4, y: 74.2 }, slotNumber: 2 },
+          { id: "prl_mammary", label: "PRL -> mammary gland", target: "prl_mammary", marker: { x: 68.5, y: 75.4 }, slotNumber: 3 },
+          { id: "fsh_gonads", label: "FSH/LH -> ovaries or testes", target: "fsh_gonads", marker: { x: 91, y: 58.7 }, slotNumber: 4 },
+          { id: "hgh_tissues", label: "hGH -> bones and tissues", target: "hgh_tissues", marker: { x: 90.2, y: 76.2 }, slotNumber: 5 }
+        ]
+      }
+    ];
+
+    const studyNotes = [
+      {
+        text: "The <strong>hypothalamus</strong> is the control centre. It sends signals that help regulate hormone release from the pituitary gland.",
+        highlightIds: ["hypothalamus"],
+        thumbs: [{ src: "hypothalumus.png", label: "Hypothalamus" }]
+      },
+      {
+        text: "The <strong>posterior pituitary</strong> releases hormones made by hypothalamic neurosecretory cells. <strong>ADH</strong> and <strong>oxytocin</strong> travel down axons and are released into the bloodstream.",
+        highlightIds: ["posterior_pathway", "posterior_blood"],
+        thumbs: [
+          { src: "ADH.png", label: "ADH" },
+          { src: "oxytocin.png", label: "Oxytocin" }
+        ]
+      },
+      {
+        text: "<strong>ADH</strong> acts on the <strong>kidney tubules</strong>. It helps the body conserve water.",
+        highlightIds: ["adh_kidney"],
+        thumbs: [{ src: "ADH.png", label: "ADH -> kidney tubules" }]
+      },
+      {
+        text: "<strong>Oxytocin</strong> acts on smooth muscle in the <strong>uterus</strong> and on <strong>mammary glands</strong>. It is involved in uterine contractions and milk release.",
+        highlightIds: ["oxytocin_uterus", "oxytocin_mammary"],
+        thumbs: [{ src: "oxytocin.png", label: "Oxytocin targets" }]
+      },
+      {
+        text: "The <strong>anterior pituitary</strong> is controlled through the <strong>portal system</strong>. Hypothalamic releasing or release-inhibiting hormones travel through blood vessels to regulate anterior pituitary hormone secretion.",
+        highlightIds: ["portal_system", "anterior_pathway"],
+        thumbs: [{ src: "hypothalumus.png", label: "Portal control" }]
+      },
+      {
+        text: "Anterior pituitary hormones act on target organs and tissues: <strong>TSH</strong> acts on the thyroid, <strong>ACTH</strong> acts on the adrenal cortex, <strong>PRL</strong> acts on mammary glands, <strong>FSH/LH</strong> act on ovaries or testes, and <strong>hGH</strong> acts on bones and tissues.",
+        highlightIds: ["tsh_thyroid", "acth_adrenal", "prl_mammary", "fsh_gonads", "hgh_tissues"],
+        thumbs: [
+          { src: "TSH.png", label: "TSH" },
+          { src: "ACTH.png", label: "ACTH" },
+          { src: "PRL.png", label: "PRL" },
+          { src: "FSH.png", label: "FSH/LH" },
+          { src: "hGH.png", label: "hGH" }
+        ]
+      }
+    ];
+
+    const quizData = [
+      {
+        image: "ADH.png",
+        question: "What does this hormone do in the body?",
+        options: [
+          "Stimulates milk production in mammary glands",
+          "Helps the body conserve water by acting on kidney tubules"
+        ],
+        correct: 1,
+        explanation: "ADH (antidiuretic hormone) is released by the posterior pituitary and acts on the kidney tubules to increase water reabsorption, helping the body conserve water when blood osmolarity rises."
+      },
+      {
+        image: "oxytocin.png",
+        question: "This hormone is released by the posterior pituitary. Where does it act?",
+        options: [
+          "On the thyroid gland to stimulate thyroid hormone release",
+          "On the uterus (stimulating contractions) and mammary glands (triggering milk release)"
+        ],
+        correct: 1,
+        explanation: "Oxytocin targets smooth muscle in the uterus, driving contractions during labour, and also acts on mammary glands to trigger the milk let-down reflex. Both ADH and oxytocin are made in the hypothalamus and released from the posterior pituitary."
+      },
+      {
+        image: "TSH.png",
+        question: "This anterior pituitary hormone targets which organ?",
+        options: [
+          "The thyroid gland",
+          "The adrenal cortex"
+        ],
+        correct: 0,
+        explanation: "TSH (thyroid-stimulating hormone) travels from the anterior pituitary to the thyroid gland, stimulating it to produce and release thyroid hormones (T3 and T4), which regulate metabolism throughout the body."
+      },
+      {
+        image: "ACTH.png",
+        question: "What is the primary target organ of this anterior pituitary hormone?",
+        options: [
+          "The gonads (ovaries or testes)",
+          "The adrenal cortex"
+        ],
+        correct: 1,
+        explanation: "ACTH (adrenocorticotropic hormone) is released from the anterior pituitary and stimulates the adrenal cortex to produce and secrete cortisol and other glucocorticoids, which are central to the stress response."
+      },
+      {
+        image: "PRL.png",
+        question: "What does this anterior pituitary hormone primarily stimulate?",
+        options: [
+          "Milk production in mammary glands",
+          "Growth in bones and body tissues"
+        ],
+        correct: 0,
+        explanation: "PRL (prolactin) stimulates mammary glands to produce milk after childbirth. It works alongside oxytocin: prolactin drives milk production, while oxytocin triggers milk release (let-down)."
+      },
+      {
+        image: "FSH.png",
+        question: "FSH and LH are both released from the anterior pituitary. What are their target organs?",
+        options: [
+          "The kidneys and liver",
+          "The ovaries or testes (gonads)"
+        ],
+        correct: 1,
+        explanation: "FSH (follicle-stimulating hormone) and LH (luteinizing hormone) both act on the gonads. In females they regulate the ovarian cycle and ovulation; in males they control sperm production and testosterone release."
+      },
+      {
+        image: "hGH.png",
+        question: "What does this anterior pituitary hormone primarily stimulate?",
+        options: [
+          "Contractions of the uterus during labour",
+          "Growth in bones and body tissues"
+        ],
+        correct: 1,
+        explanation: "hGH (human growth hormone) is released from the anterior pituitary and promotes growth in bones and tissues throughout the body. It also influences metabolism, cell repair, and body composition."
+      },
+      {
+        image: null,
+        question: "Which part of the pituitary gland releases ADH and oxytocin into the bloodstream?",
+        options: [
+          "The anterior pituitary",
+          "The posterior pituitary"
+        ],
+        correct: 1,
+        explanation: "ADH and oxytocin are synthesized by neurosecretory cells in the hypothalamus. They travel down axons into the posterior pituitary, where they are stored and then released into the bloodstream when triggered."
+      },
+      {
+        image: null,
+        question: "How does the hypothalamus control the anterior pituitary?",
+        options: [
+          "Through nerve axons that release hormones directly into the gland",
+          "Through releasing hormones that travel via the portal blood system"
+        ],
+        correct: 1,
+        explanation: "The hypothalamus uses the hypothalamic-pituitary portal system — a specialized network of blood vessels — to deliver releasing and release-inhibiting hormones (such as CRH, TRH, and GnRH) directly to the anterior pituitary cells."
+      },
+      {
+        image: null,
+        question: "What type of connection links the hypothalamus to the posterior pituitary?",
+        options: [
+          "A portal blood vessel network",
+          "Nerve axons from hypothalamic neurosecretory cells"
+        ],
+        correct: 1,
+        explanation: "The hypothalamus is physically connected to the posterior pituitary by nerve axons (not blood vessels). Neurosecretory cell bodies sit in the hypothalamus, and their axons extend down into the posterior pituitary where hormone-filled vesicles are released into the blood."
+      },
+      {
+        image: null,
+        question: "During dehydration, which hormone is released to help the body retain water?",
+        options: [
+          "ADH (antidiuretic hormone)",
+          "hGH (human growth hormone)"
+        ],
+        correct: 0,
+        explanation: "When blood osmolarity rises (as during dehydration), osmoreceptors in the hypothalamus trigger the release of ADH from the posterior pituitary. ADH acts on kidney tubules to increase water reabsorption, reducing urine output and restoring fluid balance."
+      }
+    ];
+
+    const quizState = {
+      index: 0,
+      score: 0,
+      answered: false,
+      selectedOption: null,
+      complete: false
+    };
+
+    const totalItems = activityParts.reduce((sum, part) => sum + part.items.length, 0);
+    const thumbStrip = document.getElementById("thumbStrip");
+    const tabsEl = document.getElementById("tabs");
+    const leaderLinesEl = document.getElementById("leaderLines");
+    const overlayLayerEl = document.getElementById("overlayLayer");
+    const labelListEl = document.getElementById("labelList");
+    const slotListEl = document.getElementById("slotList");
+    const scoreTextEl = document.getElementById("scoreText");
+    const partCountTextEl = document.getElementById("partCountText");
+    const partTitleEl = document.getElementById("partTitle");
+    const partInstructionEl = document.getElementById("partInstruction");
+    const statusBannerEl = document.getElementById("statusBanner");
+    const matchingBoardEl = document.getElementById("matchingBoard");
+    const answerKeyBtn = document.getElementById("answerKeyBtn");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const wrapupBtn = document.getElementById("wrapupBtn");
+    const wrapupPanelEl = document.getElementById("wrapupPanel");
+    const noteMetaEl = document.getElementById("noteMeta");
+    const noteCardEl = document.getElementById("noteCard");
+    const wrapPrevBtn = document.getElementById("wrapPrev");
+    const wrapNextBtn = document.getElementById("wrapNext");
+    const wrapExitBtn = document.getElementById("wrapExit");
+    const imageCanvasEl = document.getElementById("imageCanvas");
+    const coordReadoutEl = document.getElementById("coordReadout");
+    const debugGridEl = document.getElementById("debugGrid");
+    const quizPanelEl = document.getElementById("quizPanel");
+    const quizBtnEl = document.getElementById("quizBtn");
+
+    const itemToPartMap = {};
+    activityParts.forEach((part) => {
+      part.items.forEach((item) => {
+        itemToPartMap[item.id] = part.id;
+      });
+    });
+
+    const partStates = Object.fromEntries(activityParts.map((part) => [
+      part.id,
+      {
+        completed: {},
+        order: shuffleArray(part.items.map((item) => item.id)),
+        answerKeyShown: false
+      }
+    ]));
+
+    const state = {
+      currentPartIndex: 0,
+      selectedLabelId: null,
+      statusTone: "info",
+      statusText: "Match the labels for this part. Only the current tab’s hotspots are shown.",
+      wrapupOpen: false,
+      currentNoteIndex: 0,
+      quizOpen: false
+    };
+
+    if (debugMode) {
+      document.body.classList.add("debug-mode");
+    }
+
+    buildDebugGrid();
+    buildThumbStrip();
+    render();
+    if (editMode) buildEditPanel();
+
+    tabsEl.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-part-index]");
+      if (!button) return;
+      state.currentPartIndex = Number(button.dataset.partIndex);
+      state.selectedLabelId = null;
+      state.wrapupOpen = false;
+      const currentPart = getCurrentPart();
+      const completedCount = getCompletedCountForPart(currentPart.id);
+      const remaining = currentPart.items.length - completedCount;
+      setStatus(
+        remaining === 0
+          ? currentPart.completionMessage
+          : "Match the labels for this part. Only the current tab’s hotspots are shown.",
+        remaining === 0 ? "success" : "info"
+      );
+      render();
+    });
+
+    shuffleBtn.addEventListener("click", () => {
+      const part = getCurrentPart();
+      const partState = partStates[part.id];
+      const remainingIds = part.items
+        .map((item) => item.id)
+        .filter((itemId) => !partState.completed[itemId]);
+      partState.order = shuffleArray(remainingIds);
+      state.selectedLabelId = null;
+      setStatus("Labels shuffled for this part.", "info");
+      render();
+    });
+
+    answerKeyBtn.addEventListener("click", () => {
+      const part = getCurrentPart();
+      const partState = partStates[part.id];
+      part.items.forEach((item) => {
+        partState.completed[item.id] = true;
+      });
+      partState.order = [];
+      partState.answerKeyShown = true;
+      state.selectedLabelId = null;
+      setStatus(part.completionMessage, "success");
+      render();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      const part = getCurrentPart();
+      partStates[part.id] = {
+        completed: {},
+        order: shuffleArray(part.items.map((item) => item.id)),
+        answerKeyShown: false
+      };
+      state.selectedLabelId = null;
+      state.wrapupOpen = false;
+      setStatus("This part has been reset.", "info");
+      render();
+    });
+
+    wrapupBtn.addEventListener("click", () => {
+      state.wrapupOpen = true;
+      state.currentNoteIndex = 0;
+      render();
+    });
+
+    wrapPrevBtn.addEventListener("click", () => {
+      state.currentNoteIndex = Math.max(0, state.currentNoteIndex - 1);
+      render();
+    });
+
+    wrapNextBtn.addEventListener("click", () => {
+      state.currentNoteIndex = Math.min(studyNotes.length - 1, state.currentNoteIndex + 1);
+      render();
+    });
+
+    wrapExitBtn.addEventListener("click", () => {
+      state.wrapupOpen = false;
+      render();
+    });
+
+    quizBtnEl.addEventListener("click", () => {
+      state.quizOpen = true;
+      state.wrapupOpen = false;
+      quizState.index = 0;
+      quizState.score = 0;
+      quizState.answered = false;
+      quizState.selectedOption = null;
+      quizState.complete = false;
+      render();
+    });
+
+    imageCanvasEl.addEventListener("mousemove", (event) => {
+      if (!debugMode) return;
+      const rect = imageCanvasEl.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 100;
+      const y = ((event.clientY - rect.top) / rect.height) * 100;
+      coordReadoutEl.textContent = `x: ${x.toFixed(1)}%, y: ${y.toFixed(1)}%`;
+    });
+
+    function render() {
+      renderTabs();
+      renderHeaderBlock();
+      renderLabelsAndSlots();
+      renderOverlay();
+      renderControls();
+      renderWrapup();
+      renderQuizPanel();
+      renderScore();
+    }
+
+    function renderTabs() {
+      tabsEl.innerHTML = "";
+      activityParts.forEach((part, index) => {
+        const completed = getCompletedCountForPart(part.id) === part.items.length;
+        const button = document.createElement("button");
+        button.className = `tab-button${index === state.currentPartIndex && !state.wrapupOpen ? " active" : ""}${completed ? " complete" : ""}`;
+        button.type = "button";
+        button.dataset.partIndex = String(index);
+        button.textContent = part.tabLabel;
+        tabsEl.appendChild(button);
+      });
+
+      const refBtn = document.createElement("button");
+      refBtn.type = "button";
+      refBtn.className = "tab-button";
+      refBtn.style.marginLeft = "auto";
+      const mainImg = document.querySelector(".main-image");
+      const isLabeled = mainImg && mainImg.src.endsWith("complete.png");
+      refBtn.textContent = isLabeled ? "Hide Reference" : "Labeled Reference";
+      refBtn.addEventListener("click", () => {
+        const img = document.querySelector(".main-image");
+        const showing = img.src.endsWith("complete.png");
+        img.src = showing ? "no_text.png" : "complete.png";
+        refBtn.textContent = showing ? "Labeled Reference" : "Hide Reference";
+        leaderLinesEl.style.visibility = showing ? "" : "hidden";
+        overlayLayerEl.style.visibility = showing ? "" : "hidden";
+      });
+      tabsEl.appendChild(refBtn);
+    }
+
+    function renderHeaderBlock() {
+      const part = getCurrentPart();
+      partTitleEl.textContent = part.title;
+      partInstructionEl.textContent = part.instruction;
+      statusBannerEl.textContent = state.statusText;
+      statusBannerEl.className = `status-banner${state.statusTone === "success" ? " success" : state.statusTone === "error" ? " error" : ""}`;
+      const hideActivity = state.wrapupOpen || state.quizOpen;
+      matchingBoardEl.classList.toggle("hidden", hideActivity);
+      document.getElementById("promptBlock").classList.toggle("hidden", hideActivity);
+      statusBannerEl.classList.toggle("hidden", hideActivity);
+    }
+
+    function renderLabelsAndSlots() {
+      const part = getCurrentPart();
+      const partState = partStates[part.id];
+      labelListEl.innerHTML = "";
+      slotListEl.innerHTML = "";
+
+      const visibleLabelIds = partState.order.filter((itemId) => !partState.completed[itemId]);
+
+      visibleLabelIds.forEach((itemId) => {
+        const item = part.items.find((entry) => entry.id === itemId);
+        const button = document.createElement("button");
+        button.className = `label-chip${state.selectedLabelId === itemId ? " selected" : ""}`;
+        button.type = "button";
+        button.draggable = false;
+        button.dataset.itemId = item.id;
+        button.setAttribute("aria-label", `Label ${item.label}`);
+        button.textContent = item.label;
+        button.addEventListener("click", () => {
+          state.selectedLabelId = state.selectedLabelId === item.id ? null : item.id;
+          renderLabelsAndSlots();
+        });
+        labelListEl.appendChild(button);
+      });
+
+      part.items.forEach((item) => {
+        const completed = !!partState.completed[item.id];
+        const row = document.createElement("div");
+        row.className = "slot-row";
+
+        const number = document.createElement("div");
+        number.className = `slot-number${completed ? " correct" : ""}`;
+        number.textContent = item.slotNumber;
+
+        const slot = document.createElement("div");
+        slot.className = `drop-slot${completed ? " filled correct" : ""}`;
+        slot.dataset.slotItemId = item.id;
+        slot.dataset.completed = String(completed);
+        slot.setAttribute("aria-label", `Matching box ${item.slotNumber}`);
+        slot.textContent = completed ? item.label : "Drop label here";
+        if (!completed) {
+          slot.addEventListener("dragover", (event) => {
+            event.preventDefault();
+            slot.classList.add("over");
+          });
+          slot.addEventListener("dragleave", () => {
+            slot.classList.remove("over");
+          });
+          slot.addEventListener("drop", (event) => {
+            event.preventDefault();
+            slot.classList.remove("over");
+            const itemId = event.dataTransfer.getData("text/plain") || state.selectedLabelId;
+            if (!itemId) return;
+            handlePlacement(itemId, item.id, slot);
+          });
+          slot.addEventListener("click", () => {
+            if (!state.selectedLabelId) return;
+            handlePlacement(state.selectedLabelId, item.id, slot);
+          });
+        }
+
+        row.append(number, slot);
+        slotListEl.appendChild(row);
+      });
+    }
+
+    function renderOverlay() {
+      const activeIds = state.wrapupOpen
+        ? studyNotes[state.currentNoteIndex].highlightIds
+        : getCurrentPart().items.map((item) => item.id);
+      const completedItems = new Set(getAllCompletedItemIds());
+      leaderLinesEl.innerHTML = "";
+      overlayLayerEl.innerHTML = "";
+
+      const allItemIds = debugMode && debugAll
+        ? Object.keys(itemToPartMap)
+        : activeIds;
+
+      allItemIds.forEach((itemId) => {
+        const item = findItemById(itemId);
+        const target = hotspotTargets[item.target];
+        const highlight = state.wrapupOpen ? activeIds.includes(itemId) : true;
+        const completed = completedItems.has(itemId);
+        const targetX = target.tx;
+        const targetY = target.ty;
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", item.marker.x);
+        line.setAttribute("y1", item.marker.y);
+        line.setAttribute("x2", targetX);
+        line.setAttribute("y2", targetY);
+        line.setAttribute("class", `leader-line${completed ? " correct" : ""}`);
+        line.dataset.itemId = itemId;
+        line.style.opacity = highlight ? "1" : "0.16";
+        leaderLinesEl.appendChild(line);
+
+        let dot;
+        if (target.shape === "oval") {
+          dot = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+          dot.setAttribute("cx", targetX);
+          dot.setAttribute("cy", targetY);
+          dot.setAttribute("rx", target.rx || 1.8);
+          dot.setAttribute("ry", target.ry || 1.3);
+        } else {
+          dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          dot.setAttribute("cx", targetX);
+          dot.setAttribute("cy", targetY);
+          dot.setAttribute("r", 0.6);
+        }
+        dot.setAttribute("class", `leader-dot${completed ? " correct" : ""}`);
+        dot.dataset.itemId = itemId;
+        dot.style.opacity = highlight ? "1" : "0.16";
+        leaderLinesEl.appendChild(dot);
+
+        const marker = document.createElement("div");
+        marker.className = `marker${completed ? " correct" : ""}${state.wrapupOpen && highlight ? " highlight" : ""}`;
+        marker.textContent = String(item.slotNumber);
+        marker.style.setProperty("--x", `${item.marker.x}%`);
+        marker.style.setProperty("--y", `${item.marker.y}%`);
+        marker.dataset.itemId = itemId;
+        overlayLayerEl.appendChild(marker);
+
+        const markerLabel = document.createElement("div");
+        markerLabel.className = "marker-label";
+        markerLabel.style.left = `${item.marker.x}%`;
+        markerLabel.style.top = `${Math.max(4, item.marker.y - 3)}%`;
+        markerLabel.textContent = `#${item.slotNumber} marker`;
+        overlayLayerEl.appendChild(markerLabel);
+
+        const targetLabel = document.createElement("div");
+        targetLabel.className = "target-label";
+        targetLabel.style.left = `${targetX}%`;
+        targetLabel.style.top = `${Math.max(4, targetY - 3)}%`;
+        targetLabel.textContent = target.label;
+        overlayLayerEl.appendChild(targetLabel);
+      });
+
+      renderThumbs();
+      if (editMode) setupEditDragging();
+    }
+
+    function renderControls() {
+      const currentPart = getCurrentPart();
+      const currentPartComplete = getCompletedCountForPart(currentPart.id) === currentPart.items.length;
+      const allDone = getAllCompletedItemIds().length === totalItems;
+      shuffleBtn.disabled = state.wrapupOpen || state.quizOpen || currentPartComplete;
+      resetBtn.disabled = state.wrapupOpen || state.quizOpen;
+      answerKeyBtn.disabled = state.wrapupOpen || state.quizOpen || currentPartComplete;
+      answerKeyBtn.textContent = partStates[currentPart.id].answerKeyShown ? "Answer key shown" : "Show answer key";
+      wrapupBtn.classList.toggle("hidden", !allDone || state.wrapupOpen || state.quizOpen);
+      quizBtnEl.classList.toggle("hidden", !allDone || state.quizOpen);
+    }
+
+    function renderWrapup() {
+      wrapupPanelEl.classList.toggle("active", state.wrapupOpen && !state.quizOpen);
+      if (!state.wrapupOpen || state.quizOpen) return;
+      const note = studyNotes[state.currentNoteIndex];
+      noteMetaEl.textContent = `Note ${state.currentNoteIndex + 1} of ${studyNotes.length}`;
+      noteCardEl.innerHTML = note.text;
+      wrapPrevBtn.disabled = state.currentNoteIndex === 0;
+      wrapNextBtn.disabled = state.currentNoteIndex === studyNotes.length - 1;
+    }
+
+    function renderScore() {
+      const overall = getAllCompletedItemIds().length;
+      const part = getCurrentPart();
+      scoreTextEl.textContent = `Score: ${overall}/${totalItems}`;
+      partCountTextEl.textContent = `Part ${state.currentPartIndex + 1} of ${activityParts.length} | ${getCompletedCountForPart(part.id)}/${part.items.length}`;
+    }
+
+    function handlePlacement(labelItemId, slotItemId, slotEl) {
+      const currentPart = getCurrentPart();
+      const partState = partStates[currentPart.id];
+      const labelItem = currentPart.items.find((item) => item.id === labelItemId);
+      if (!labelItem) return;
+
+      if (labelItemId === slotItemId) {
+        partState.completed[labelItemId] = true;
+        partState.order = partState.order.filter((id) => id !== labelItemId);
+        state.selectedLabelId = null;
+
+        const complete = getCompletedCountForPart(currentPart.id) === currentPart.items.length;
+        setStatus(complete ? currentPart.completionMessage : "Correct. That label is now locked in place.", "success");
+        render();
+      } else {
+        state.selectedLabelId = null;
+        setStatus("That one doesn’t match this numbered location yet. Try a different label.", "error");
+        if (slotEl) {
+          slotEl.classList.add("shake");
+          window.setTimeout(() => slotEl.classList.remove("shake"), 320);
+        }
+        const wrongChip = labelListEl.querySelector(`[data-item-id="${CSS.escape(labelItemId)}"]`);
+        if (wrongChip) {
+          wrongChip.classList.add("shake");
+          window.setTimeout(() => wrongChip.classList.remove("shake"), 320);
+        }
+        renderLabelsAndSlots();
+      }
+    }
+
+    function renderThumbs() {
+      thumbStrip.innerHTML = "";
+      if (!state.wrapupOpen) return;
+      const note = studyNotes[state.currentNoteIndex];
+      note.thumbs.forEach((thumb) => {
+        const card = document.createElement("div");
+        card.className = "thumb-card visible";
+        card.innerHTML = `<img src="${thumb.src}" alt="${thumb.label}" /><div>${thumb.label}</div>`;
+        thumbStrip.appendChild(card);
+      });
+    }
+
+    function setStatus(text, tone) {
+      state.statusText = text;
+      state.statusTone = tone;
+    }
+
+    function getCurrentPart() {
+      return activityParts[state.currentPartIndex];
+    }
+
+    function findItemById(itemId) {
+      for (const part of activityParts) {
+        const item = part.items.find((entry) => entry.id === itemId);
+        if (item) return item;
+      }
+      return null;
+    }
+
+    function getCompletedCountForPart(partId) {
+      return Object.keys(partStates[partId].completed).length;
+    }
+
+    function getAllCompletedItemIds() {
+      return activityParts.flatMap((part) => Object.keys(partStates[part.id].completed));
+    }
+
+    function buildThumbStrip() {
+      thumbStrip.innerHTML = "";
+    }
+
+    function buildDebugGrid() {
+      debugGridEl.innerHTML = "";
+      for (let i = 0; i <= 10; i++) {
+        const pct = i * 10;
+        const v = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        v.setAttribute("x1", pct);
+        v.setAttribute("y1", 0);
+        v.setAttribute("x2", pct);
+        v.setAttribute("y2", 100);
+        debugGridEl.appendChild(v);
+
+        const h = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        h.setAttribute("x1", 0);
+        h.setAttribute("y1", pct);
+        h.setAttribute("x2", 100);
+        h.setAttribute("y2", pct);
+        debugGridEl.appendChild(h);
+
+        if (pct < 100) {
+          const textTop = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          textTop.setAttribute("x", pct + 0.7);
+          textTop.setAttribute("y", 2.7);
+          textTop.textContent = `${pct}%`;
+          debugGridEl.appendChild(textTop);
+
+          const textLeft = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          textLeft.setAttribute("x", 0.8);
+          textLeft.setAttribute("y", pct + 2.7);
+          textLeft.textContent = `${pct}%`;
+          debugGridEl.appendChild(textLeft);
+        }
+      }
+    }
+
+    function shuffleArray(items) {
+      const clone = [...items];
+      for (let i = clone.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [clone[i], clone[j]] = [clone[j], clone[i]];
+      }
+      return clone;
+    }
+
+    // ── Quiz ──────────────────────────────────────────────────────────────────
+
+    function renderQuizPanel() {
+      if (!state.quizOpen) {
+        quizPanelEl.classList.add("hidden");
+        return;
+      }
+      quizPanelEl.classList.remove("hidden");
+      quizPanelEl.innerHTML = "";
+
+      if (quizState.complete) {
+        const result = document.createElement("div");
+        result.className = "quiz-result";
+
+        const bigScore = document.createElement("div");
+        bigScore.className = "quiz-score-big";
+        bigScore.textContent = `${quizState.score}/${quizData.length}`;
+
+        const lbl = document.createElement("div");
+        lbl.className = "quiz-score-label";
+        const pct = Math.round(quizState.score / quizData.length * 100);
+        lbl.textContent = pct >= 80
+          ? `Great work — ${pct}% correct!`
+          : pct >= 60
+            ? `Good effort — ${pct}% correct. Review the explanations and try again.`
+            : `${pct}% correct. Review the explanations and give it another try.`;
+
+        result.append(bigScore, lbl);
+        quizPanelEl.appendChild(result);
+
+        const controls = document.createElement("div");
+        controls.className = "quiz-controls";
+
+        const exitBtn = document.createElement("button");
+        exitBtn.className = "button";
+        exitBtn.textContent = "Exit Quiz";
+        exitBtn.addEventListener("click", () => {
+          state.quizOpen = false;
+          render();
+        });
+
+        const retryBtn = document.createElement("button");
+        retryBtn.className = "button primary";
+        retryBtn.textContent = "Retake Quiz";
+        retryBtn.addEventListener("click", () => {
+          quizState.index = 0;
+          quizState.score = 0;
+          quizState.answered = false;
+          quizState.selectedOption = null;
+          quizState.complete = false;
+          renderQuizPanel();
+        });
+
+        controls.append(exitBtn, retryBtn);
+        quizPanelEl.appendChild(controls);
+        return;
+      }
+
+      const q = quizData[quizState.index];
+
+      const meta = document.createElement("div");
+      meta.className = "quiz-meta";
+      meta.textContent = `Question ${quizState.index + 1} of ${quizData.length}`;
+      quizPanelEl.appendChild(meta);
+
+      if (q.image) {
+        const wrap = document.createElement("div");
+        wrap.className = "quiz-image-wrap";
+        const img = document.createElement("img");
+        img.className = "quiz-image";
+        img.src = q.image;
+        img.alt = q.image.replace(".png", "");
+        wrap.appendChild(img);
+        quizPanelEl.appendChild(wrap);
+      }
+
+      const questionEl = document.createElement("p");
+      questionEl.className = "quiz-question";
+      questionEl.textContent = q.question;
+      quizPanelEl.appendChild(questionEl);
+
+      const optionsEl = document.createElement("div");
+      optionsEl.className = "quiz-options";
+      q.options.forEach((text, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "quiz-option";
+        btn.type = "button";
+        btn.textContent = text;
+        if (quizState.answered) {
+          btn.disabled = true;
+          if (idx === q.correct) btn.classList.add("correct");
+          else if (idx === quizState.selectedOption) btn.classList.add("wrong");
+        } else {
+          btn.addEventListener("click", () => {
+            quizState.answered = true;
+            quizState.selectedOption = idx;
+            if (idx === q.correct) quizState.score++;
+            renderQuizPanel();
+          });
+        }
+        optionsEl.appendChild(btn);
+      });
+      quizPanelEl.appendChild(optionsEl);
+
+      if (quizState.answered) {
+        const isCorrect = quizState.selectedOption === q.correct;
+        const exp = document.createElement("div");
+        exp.className = `quiz-explanation${isCorrect ? " correct-exp" : ""}`;
+        exp.innerHTML = `<strong>${isCorrect ? "Correct!" : "Not quite."}</strong> ${q.explanation}`;
+        quizPanelEl.appendChild(exp);
+
+        const controls = document.createElement("div");
+        controls.className = "quiz-controls";
+        const isLast = quizState.index === quizData.length - 1;
+        const nextBtn = document.createElement("button");
+        nextBtn.className = "button primary";
+        nextBtn.textContent = isLast ? "See Results" : "Next Question";
+        nextBtn.addEventListener("click", () => {
+          if (isLast) {
+            quizState.complete = true;
+          } else {
+            quizState.index++;
+            quizState.answered = false;
+            quizState.selectedOption = null;
+          }
+          renderQuizPanel();
+        });
+        controls.appendChild(nextBtn);
+        quizPanelEl.appendChild(controls);
+      }
+    }
+
+    // ── Edit mode ─────────────────────────────────────────────────────────────
+
+    function buildEditPanel() {
+      if (document.getElementById("editPanel")) return;
+      const panel = document.createElement("div");
+      panel.id = "editPanel";
+      panel.className = "edit-panel";
+
+      const label = document.createElement("span");
+      label.className = "edit-panel-label";
+      label.textContent = "✎ Edit mode";
+      panel.appendChild(label);
+
+      editStatusEl = document.createElement("span");
+      editStatusEl.className = "edit-status";
+      editStatusEl.textContent = "Drag a blue marker or white target dot";
+      panel.appendChild(editStatusEl);
+
+      const copyMarkersBtn = document.createElement("button");
+      copyMarkersBtn.textContent = "Copy current part markers";
+      copyMarkersBtn.addEventListener("click", () => {
+        const part = getCurrentPart();
+        const lines = part.items.map(item => {
+          const m = item.marker;
+          return `  { id: "${item.id}", label: "${item.label}", target: "${item.target}", marker: { x: ${m.x}, y: ${m.y} }, slotNumber: ${item.slotNumber} }`;
+        });
+        navigator.clipboard.writeText(lines.join(",\n")).then(() => flashBtn(copyMarkersBtn, "Copied!"));
+      });
+      panel.appendChild(copyMarkersBtn);
+
+      const copyTargetsBtn = document.createElement("button");
+      copyTargetsBtn.textContent = "Copy all targets";
+      copyTargetsBtn.addEventListener("click", () => {
+        const lines = Object.entries(hotspotTargets).map(([key, t]) => {
+          if (t.shape === "oval") {
+            return `  ${key}: { tx: ${t.tx}, ty: ${t.ty}, shape: "oval", rx: ${t.rx}, ry: ${t.ry}, label: "${t.label}" }`;
+          }
+          return `  ${key}: { tx: ${t.tx}, ty: ${t.ty}, shape: "dot", label: "${t.label}" }`;
+        });
+        navigator.clipboard.writeText(`{\n${lines.join(",\n")}\n}`).then(() => flashBtn(copyTargetsBtn, "Copied!"));
+      });
+      panel.appendChild(copyTargetsBtn);
+
+      const copyAllBtn = document.createElement("button");
+      copyAllBtn.textContent = "Copy all parts";
+      copyAllBtn.addEventListener("click", () => {
+        const parts = activityParts.map(part => {
+          const itemLines = part.items.map(item => {
+            const m = item.marker;
+            return `      { id: "${item.id}", label: "${item.label}", target: "${item.target}", marker: { x: ${m.x}, y: ${m.y} }, slotNumber: ${item.slotNumber} }`;
+          });
+          return `  { id: "${part.id}", tabLabel: "${part.tabLabel}", items: [\n${itemLines.join(",\n")}\n  ] }`;
+        });
+        navigator.clipboard.writeText(`[\n${parts.join(",\n")}\n]`).then(() => flashBtn(copyAllBtn, "Copied!"));
+      });
+      panel.appendChild(copyAllBtn);
+
+      document.body.appendChild(panel);
+    }
+
+    function flashBtn(btn, msg) {
+      const orig = btn.textContent;
+      btn.textContent = msg;
+      btn.classList.add("flash");
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove("flash"); }, 1400);
+    }
+
+    function updateEditStatus(text) {
+      if (editStatusEl) editStatusEl.textContent = text;
+    }
+
+    function setupEditDragging() {
+      // Drag blue marker divs
+      overlayLayerEl.querySelectorAll(".marker[data-item-id]").forEach(el => {
+        el.style.cursor = "grab";
+        el.style.pointerEvents = "all";
+
+        el.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          el.style.cursor = "grabbing";
+          const itemId = el.dataset.itemId;
+          const item = findItemById(itemId);
+          const line = leaderLinesEl.querySelector(`line[data-item-id="${itemId}"]`);
+
+          const onMove = (me) => {
+            const r = imageCanvasEl.getBoundingClientRect();
+            const x = Math.max(0, Math.min(100, (me.clientX - r.left) / r.width * 100));
+            const y = Math.max(0, Math.min(100, (me.clientY - r.top) / r.height * 100));
+            el.style.setProperty("--x", `${x}%`);
+            el.style.setProperty("--y", `${y}%`);
+            if (line) { line.setAttribute("x1", x); line.setAttribute("y1", y); }
+            updateEditStatus(`#${item.slotNumber} marker  x: ${x.toFixed(1)}, y: ${y.toFixed(1)}`);
+          };
+
+          const onUp = (me) => {
+            el.style.cursor = "grab";
+            const r = imageCanvasEl.getBoundingClientRect();
+            item.marker.x = parseFloat(((me.clientX - r.left) / r.width * 100).toFixed(1));
+            item.marker.y = parseFloat(((me.clientY - r.top) / r.height * 100).toFixed(1));
+            item.marker.x = Math.max(0, Math.min(100, item.marker.x));
+            item.marker.y = Math.max(0, Math.min(100, item.marker.y));
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            renderOverlay();
+          };
+
+          document.addEventListener("mousemove", onMove);
+          document.addEventListener("mouseup", onUp);
+        });
+      });
+
+      // Drag white target dots (SVG elements)
+      leaderLinesEl.querySelectorAll(".leader-dot[data-item-id]").forEach(el => {
+        el.style.cursor = "grab";
+        el.style.pointerEvents = "all";
+
+        el.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          el.style.cursor = "grabbing";
+          const itemId = el.dataset.itemId;
+          const item = findItemById(itemId);
+          const target = hotspotTargets[item.target];
+          const line = leaderLinesEl.querySelector(`line[data-item-id="${itemId}"]`);
+
+          const onMove = (me) => {
+            const r = imageCanvasEl.getBoundingClientRect();
+            const x = Math.max(0, Math.min(100, (me.clientX - r.left) / r.width * 100));
+            const y = Math.max(0, Math.min(100, (me.clientY - r.top) / r.height * 100));
+            el.setAttribute("cx", x);
+            el.setAttribute("cy", y);
+            if (line) { line.setAttribute("x2", x); line.setAttribute("y2", y); }
+            updateEditStatus(`"${item.target}" dot  tx: ${x.toFixed(1)}, ty: ${y.toFixed(1)}`);
+          };
+
+          const onUp = (me) => {
+            el.style.cursor = "grab";
+            const r = imageCanvasEl.getBoundingClientRect();
+            const x = Math.max(0, Math.min(100, (me.clientX - r.left) / r.width * 100));
+            const y = Math.max(0, Math.min(100, (me.clientY - r.top) / r.height * 100));
+            target.tx = parseFloat(x.toFixed(1));
+            target.ty = parseFloat(y.toFixed(1));
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            renderOverlay();
+          };
+
+          document.addEventListener("mousemove", onMove);
+          document.addEventListener("mouseup", onUp);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

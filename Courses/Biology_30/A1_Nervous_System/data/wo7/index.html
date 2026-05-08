@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cochlea Anatomy Drag-and-Drop</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --text: #111827;
+      --label-text: #374151;
+      --muted: #4b5563;
+      --border: #d1d5db;
+      --panel: #ffffff;
+      --bg: #f8fafc;
+      --shadow: 0 8px 18px rgba(15, 23, 42, 0.09);
+      --hotspot-size: 20px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      background: #eef2f7;
+      color: var(--text);
+    }
+
+    .slide-stage {
+      width: 100vw;
+      height: 100vh;
+      aspect-ratio: 16 / 9;
+      max-width: calc(100vh * 16 / 9);
+      max-height: calc(100vw * 9 / 16);
+      margin: auto;
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 96px 1fr;
+    }
+
+    header {
+      padding: 7px 22px 5px;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      font-weight: 800;
+    }
+
+    .instructions {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: #243244;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .part-tabs {
+      display: flex;
+      gap: 6px;
+      margin-top: 7px;
+      align-items: center;
+    }
+
+    .part-tab {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+
+    .part-tab:hover { border-color: var(--blue); color: var(--blue-dark); }
+
+    .part-tab.active {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      color: var(--blue-dark);
+    }
+
+    .part-tab.complete { border-color: #22c55e; }
+
+    .part-tab .checkmark {
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .main {
+      min-height: 0;
+      padding: 8px 12px 8px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      gap: 12px;
+    }
+
+    .diagram-card,
+    .activity-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      min-height: 0;
+    }
+
+    .diagram-card {
+      border-radius: 14px;
+      padding: 8px;
+      display: flex;
+    }
+
+    .image-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      border: 1px solid #eef2f7;
+      background: #ffffff;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .image-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1036 / 368;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .image-canvas img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* SVG overlay — lives inside .image-canvas, same coordinate space */
+    .leader-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Pointer lines */
+    .pointer-line {
+      stroke: rgba(100, 116, 139, 0.62);
+      stroke-width: 1.15;
+      vector-effect: non-scaling-stroke;
+      stroke-linecap: round;
+    }
+
+    .tip-dot {
+      fill: #ffffff;
+      stroke: rgba(100, 116, 139, 0.85);
+      stroke-width: 0.85;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .pointer-line.correct {
+      stroke: rgba(22, 163, 74, 0.82);
+      stroke-width: 1.35;
+    }
+
+    .tip-dot.correct {
+      fill: #dcfce7;
+      stroke: #16a34a;
+    }
+
+    /* Wrap-up dim/active states */
+    .pointer-line.dim,
+    .tip-dot.dim {
+      opacity: 0.12;
+    }
+
+    .pointer-line.wrapup-active {
+      stroke: rgba(37, 99, 235, 0.78);
+      stroke-width: 1.45;
+      opacity: 1;
+    }
+
+    .tip-dot.wrapup-active {
+      fill: #dbeafe;
+      stroke: #2563eb;
+      opacity: 1;
+    }
+
+    /* Hotspot number circles — inside .image-canvas, positioned via --x/--y */
+    .diagram-number {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      transform: translate(-50%, -50%);
+      width: var(--hotspot-size);
+      height: var(--hotspot-size);
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.94);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 10px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.24);
+      z-index: 4;
+      transition: background 0.18s ease, box-shadow 0.18s ease,
+                  opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .diagram-number.correct {
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.16), 0 3px 8px rgba(0, 0, 0, 0.24);
+    }
+
+    .diagram-number.dim       { opacity: 0.15; }
+    .diagram-number.wrapup-active { opacity: 1; background: rgba(37, 99, 235, 0.94); }
+
+    .diagram-number.pop { animation: markerPop 0.36s ease-out; }
+
+    @keyframes markerPop {
+      0%   { transform: translate(-50%, -50%) scale(1); }
+      50%  { transform: translate(-50%, -50%) scale(1.18); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .activity-card {
+      border-radius: 0;
+      padding: 10px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 4px;
+      overflow: hidden;
+    }
+
+    .activity-card.wrapup-mode {
+      grid-template-rows: 1fr;
+      background: #ffffff;
+      border-color: var(--border);
+      animation: panelSwap 0.45s ease-out both;
+    }
+
+    @keyframes panelSwap {
+      0% { opacity: 0.2; transform: translateX(10px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+
+    .score {
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+      margin-bottom: 0;
+    }
+
+    .status { display: none; }
+
+    .match-area {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .column {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow: hidden;
+    }
+
+    .column-title {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #374151;
+      margin-bottom: 0;
+      line-height: 1.1;
+    }
+
+    .labels,
+    .slots {
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      align-content: start;
+      gap: 2px;
+    }
+
+    .label-chip {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 3px 6px;
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      font-size: 11px;
+      line-height: 1.08;
+      font-weight: 680;
+      color: var(--label-text);
+      cursor: grab;
+      user-select: none;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
+      transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+      touch-action: none;
+    }
+
+    .label-chip:hover,
+    .label-chip:focus-visible {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      outline: none;
+    }
+
+    .label-chip.dragging {
+      opacity: 0.45;
+      cursor: grabbing;
+    }
+
+    .slot-row {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 4px;
+      align-items: center;
+      min-height: 24px;
+    }
+
+    .slot-number {
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 900;
+      justify-self: center;
+      box-shadow: 0 2px 5px rgba(15, 23, 42, 0.18);
+      transition: background 0.18s ease;
+    }
+
+    .slot-number.correct { background: var(--green); }
+
+    .drop-slot {
+      min-height: 24px;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      padding: 3px 5px;
+      font-size: 8px;
+      font-weight: 500;
+      color: #9ca3af;
+      line-height: 1.1;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .drop-slot::before { content: "Drop label here"; }
+
+    .drop-slot.drag-over {
+      background: var(--blue-soft);
+      border-color: var(--blue);
+      transform: scale(1.015);
+    }
+
+    .drop-slot.correct {
+      background: var(--green-soft);
+      border-color: #22c55e;
+      color: #166534;
+      font-size: 10px;
+      font-weight: 750;
+      animation: answerSettle 0.34s ease-out both;
+    }
+
+    .drop-slot.correct::before { content: ""; }
+
+    @keyframes answerSettle {
+      0% { opacity: 0.45; transform: translateY(-3px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .drop-slot.incorrect {
+      background: var(--red-soft);
+      border-color: var(--red);
+      animation: shake 0.25s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    .placed-text::after {
+      content: " ✓";
+      font-weight: 900;
+    }
+
+    .bottom-area {
+      display: grid;
+      gap: 4px;
+    }
+
+    .completion-prompt {
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 7px;
+      padding: 0 0 3px;
+      animation: wrapupIn 0.35s ease-out both;
+    }
+
+    .completion-prompt.show { display: flex; }
+
+    .completion-message {
+      font-size: 12.5px;
+      color: #1f4620;
+      font-weight: 600;
+      line-height: 1.35;
+      background: var(--green-soft);
+      border: 1px solid #bbddb0;
+      border-radius: 8px;
+      padding: 6px 9px;
+      width: 100%;
+    }
+
+    .completion-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .bottom-controls {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      align-items: start;
+    }
+
+    .utility-button {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+    }
+
+    .utility-button:hover,
+    .utility-button:focus-visible {
+      border-color: var(--blue);
+      color: var(--blue-dark);
+      outline: none;
+    }
+
+    .utility-button:disabled {
+      opacity: 0.62;
+      cursor: default;
+    }
+
+    .wrapup-panel {
+      display: none;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .wrapup-start-button {
+      border: 1px solid #15803d;
+      background: #16a34a;
+      color: #ffffff;
+      border-radius: 999px;
+      padding: 7px 16px;
+      font-weight: 850;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 6px 14px rgba(22, 163, 74, 0.25);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .wrapup-start-button:hover,
+    .wrapup-start-button:focus-visible {
+      background: #15803d;
+      outline: none;
+    }
+
+    .wrapup-mode.notes-mode .wrapup-panel {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 10px;
+      padding: 5px 3px;
+      animation: wrapupIn 0.55s ease-out both;
+    }
+
+    .wrapup-mode.notes-mode .activity-content { display: none; }
+
+    @keyframes wrapupIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .notes-card {
+      border: 1px solid #bbd7ad;
+      background: #eef8e9;
+      border-radius: 16px;
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 11px;
+      min-height: 0;
+    }
+
+    .notes-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .notes-title {
+      font-weight: 850;
+      color: #1f2937;
+      font-size: 19px;
+      letter-spacing: -0.025em;
+    }
+
+    .notes-count {
+      color: #4b5563;
+      font-weight: 750;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .note-text {
+      font-size: 17px;
+      line-height: 1.36;
+      color: #111827;
+      align-self: center;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    .note-text.fade-out {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+
+    .note-text.fade-in { animation: noteFadeIn 0.35s ease-out both; }
+
+    @keyframes noteFadeIn {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .note-text strong { font-weight: 850; }
+
+    .notes-nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .note-button {
+      border: 1px solid #a7c99c;
+      background: #ffffff;
+      color: #1f2937;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-weight: 850;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .note-button:hover,
+    .note-button:focus-visible {
+      border-color: var(--green);
+      color: #166534;
+      outline: none;
+    }
+
+    .note-button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .note-dots {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+    }
+
+    .note-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #b7cbb0;
+    }
+
+    .note-dot.active {
+      width: 22px;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .wrapup-controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* ─── Edit mode panel (?edit=1) ────────────────────────────────────────── */
+    #editPanel {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      width: 224px;
+      background: #1e293b;
+      color: #f1f5f9;
+      border-radius: 10px;
+      padding: 10px 11px;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 11px;
+      z-index: 9999;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.48);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ep-header {
+      font-size: 11px;
+      font-weight: 900;
+      color: #f59e0b;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 5px;
+      margin-bottom: 1px;
+    }
+    .ep-label {
+      font-size: 8px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 2px;
+    }
+    .ep-info { font-size: 11px; color: #e2e8f0; word-break: break-word; line-height: 1.3; }
+    .ep-coords { font-family: "Courier New", monospace; font-size: 12px; color: #67e8f9; font-weight: 700; }
+    .ep-hint { font-size: 9px; color: #475569; line-height: 1.5; margin: 2px 0; }
+    .ep-hr  { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 3px 0; }
+    .ep-btn {
+      background: #334155;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 5px;
+      padding: 5px 7px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      width: 100%;
+    }
+    .ep-btn:hover { background: #475569; border-color: #94a3b8; }
+    .ep-btn-primary { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+    .ep-btn-primary:hover { background: #2563eb; border-color: #60a5fa; }
+    .ep-output {
+      width: 100%;
+      background: #0f172a;
+      color: #86efac;
+      border: 1px solid #1e3a5f;
+      border-radius: 5px;
+      font-family: "Courier New", monospace;
+      font-size: 8.5px;
+      padding: 4px;
+      resize: vertical;
+      min-height: 58px;
+      margin-top: 1px;
+    }
+    /* Suppress CSS transitions on markers while dragging */
+    .edit-mode .diagram-number { transition: none; }
+    /* Pointer-line should not capture pointer events — only dots should */
+    .edit-mode .leader-svg .pointer-line { pointer-events: none; }
+  </style>
+</head>
+<body>
+  <main class="slide-stage">
+    <header>
+      <h1 id="activityTitle">Cochlea Anatomy Drag-and-Drop</h1>
+      <p class="instructions" id="partInstructions">Drag each label into its matching numbered box. Correct answers turn green and lock in place.</p>
+      <div class="part-tabs" id="partTabs" aria-label="Activity parts"></div>
+    </header>
+
+    <section class="main" aria-label="Cochlea anatomy drag-and-drop activity">
+      <div class="diagram-card">
+        <div class="image-stage">
+          <div class="image-canvas" id="imageStage">
+            <img
+              src="./ear2_image.png"
+              alt="Unlabelled diagram of the uncoiled cochlea and middle ear for a drag-and-drop labelling activity."
+            />
+            <!-- SVG overlay — same coordinate space as the image canvas -->
+            <svg
+              class="leader-svg"
+              id="leaderSvg"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            ></svg>
+          </div>
+        </div>
+      </div>
+
+      <aside class="activity-card" id="activityCard">
+        <div class="activity-content">
+          <div class="score" id="score">Score: 0/9 | Overall: 0/20</div>
+          <div class="status" id="status" aria-live="polite"></div>
+        </div>
+
+        <div class="match-area activity-content">
+          <div class="column">
+            <div class="column-title">Labels</div>
+            <div class="labels" id="labels" aria-label="Draggable cochlea anatomy labels"></div>
+          </div>
+
+          <div class="column">
+            <div class="column-title">Matching boxes</div>
+            <div class="slots" id="slots" aria-label="Numbered answer slots"></div>
+          </div>
+        </div>
+
+        <div class="bottom-area activity-content">
+          <div class="completion-prompt" id="completionPrompt">
+            <div class="completion-message" id="completionText"></div>
+            <div class="completion-actions">
+              <button class="wrapup-start-button" id="startWrapupButton" type="button">Next Part</button>
+            </div>
+          </div>
+
+          <div class="bottom-controls">
+            <button class="utility-button" id="shuffleButton" type="button">Shuffle labels</button>
+            <button class="utility-button" id="keyButton" type="button">Show answer key</button>
+            <button class="utility-button" id="resetButton" type="button">Reset Part</button>
+          </div>
+        </div>
+
+        <section class="wrapup-panel" aria-label="Study notes">
+          <div class="notes-card">
+            <div class="notes-top">
+              <div class="notes-title">Study Notes</div>
+              <div class="notes-count" id="notesCount">Note 1 of 6</div>
+            </div>
+            <div class="note-text" id="noteText"></div>
+            <div class="notes-nav">
+              <button class="note-button" id="prevNoteButton" type="button">Back</button>
+              <div class="note-dots" id="noteDots" aria-hidden="true"></div>
+              <button class="note-button" id="nextNoteButton" type="button">Next</button>
+            </div>
+          </div>
+
+          <div class="wrapup-controls">
+            <button class="utility-button" id="wrapupResetButton" type="button">Reset activity</button>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    // ─── Data ────────────────────────────────────────────────────────────────
+    //
+    // hotspotTargets  — anatomical data (target dot positions + global wrapup layout).
+    //   targets        = tip-dot(s) on the actual structure, in % of image canvas.
+    //   wrapupMarker   = position of the numbered circle in wrapup mode.
+    //   num            = global number shown in wrapup.
+    //
+    // activityParts — per-part layout.
+    //   Each item carries a marker: {x,y} that positions the numbered circle
+    //   for that specific part, chosen to avoid crossing leader lines.
+
+    const hotspotTargets = {
+      // ── Part 1 structures: sound pathway ───────────────────────────────────────
+      // These are anatomical target dots only. Marker positions are stored per part.
+      "sound-waves": {
+        num: 1,
+        wrapupMarker: { x: "4.0%", y: "18.0%" },
+        targets: [
+          { x: "4.2%", y: "34.5%" },
+          { x: "6.7%", y: "44.7%" },
+          { x: "3.8%", y: "55.5%" }
+        ]
+      },
+
+      "external-ear": {
+        num: 2,
+        wrapupMarker: { x: "13.0%", y: "18.0%" },
+        targets: [
+          { x: "14.8%", y: "50.2%" }
+        ]
+      },
+
+      "tympanic-membrane": {
+        num: 3,
+        wrapupMarker: { x: "8.5%", y: "77.5%" },
+        targets: [
+          { x: "21.8%", y: "46.2%" }
+        ]
+      },
+
+      "hammer": {
+        num: 4,
+        wrapupMarker: { x: "20.5%", y: "9.0%" },
+        targets: [
+          { x: "30.2%", y: "36.1%" }
+        ]
+      },
+
+      "anvil": {
+        num: 5,
+        wrapupMarker: { x: "38.0%", y: "8.0%" },
+        targets: [
+          { x: "34.8%", y: "28.8%" }
+        ]
+      },
+
+      "stirrup": {
+        num: 6,
+        wrapupMarker: { x: "22.0%", y: "91.0%" },
+        targets: [
+          { x: "40.0%", y: "36.6%" }
+        ]
+      },
+
+      "oval-window": {
+        num: 7,
+        wrapupMarker: { x: "52.0%", y: "8.0%" },
+        targets: [
+          { x: "41.5%", y: "41.8%" }
+        ]
+      },
+
+      "round-window": {
+        num: 8,
+        wrapupMarker: { x: "38.5%", y: "93.0%" },
+        targets: [
+          { x: "40.5%", y: "56.4%" }
+        ]
+      },
+
+      "eustachian-tube": {
+        num: 9,
+        wrapupMarker: { x: "56.0%", y: "93.0%" },
+        targets: [
+          { x: "40.2%", y: "73.3%" }
+        ]
+      },
+
+      "cochlear-nerve": {
+        num: 10,
+        wrapupMarker: { x: "18.0%", y: "86.0%" },
+        targets: [
+          { x: "38.3%", y: "61.2%" }
+        ]
+      },
+
+      // ── Cochlear chamber / fluid structures ────────────────────────────────────
+      // Use one representative target dot per matching label to avoid line clutter.
+      // Study notes explain broader distribution, especially perilymph.
+      "scala-vestibuli": {
+        num: 11,
+        wrapupMarker: { x: "56.0%", y: "18.0%" },
+        targets: [
+          { x: "61.0%", y: "31.5%" }
+        ]
+      },
+
+      "cochlear-duct": {
+        num: 12,
+        wrapupMarker: { x: "66.0%", y: "18.0%" },
+        targets: [
+          { x: "69.0%", y: "41.7%" }
+        ]
+      },
+
+      "scala-tympani": {
+        num: 13,
+        wrapupMarker: { x: "54.0%", y: "78.0%" },
+        targets: [
+          { x: "59.0%", y: "52.0%" }
+        ]
+      },
+
+      "endolymph": {
+        num: 14,
+        wrapupMarker: { x: "80.0%", y: "78.0%" },
+        targets: [
+          { x: "55.3%", y: "40.8%" }
+        ]
+      },
+
+      "perilymph": {
+        num: 15,
+        wrapupMarker: { x: "81.0%", y: "18.0%" },
+        targets: [
+          { x: "83.5%", y: "31.5%" }
+        ]
+      },
+
+      "hair-cells": {
+        num: 16,
+        wrapupMarker: { x: "69.0%", y: "78.0%" },
+        targets: [
+          { x: "63.5%", y: "43.0%" },
+          { x: "77.5%", y: "43.0%" }
+        ]
+      },
+
+      // Not a matching item. Kept only for wrap-up highlighting.
+      "uncoiled-cochlea": {
+        num: 17,
+        wrapupMarker: { x: "88.0%", y: "78.0%" },
+        targets: [
+          { x: "72.0%", y: "40.0%" }
+        ]
+      }
+    };
+
+    const activityParts = [
+      {
+        id: "sound-pathway",
+        shortTitle: "Sound Pathway",
+        title: "Part 1: How Sound Reaches the Inner Ear",
+        instructions: "Match the structures involved in carrying sound from the outside of the ear to the oval window.",
+        completionMessage: "Great job. Sound waves travel through the ear canal, vibrate the tympanic membrane, move the ossicles, and transfer vibration into the inner ear through the oval window.",
+        items: [
+          { id: 1, ref: "sound-waves",       name: "Sound waves",       marker: { x: "3.4%",  y: "7.0%" } },
+          { id: 2, ref: "external-ear",       name: "External ear",      marker: { x: "12.0%", y: "7.0%" } },
+          { id: 3, ref: "tympanic-membrane",  name: "Tympanic membrane", marker: { x: "8.0%",  y: "93.0%" } },
+
+          { id: 4, ref: "hammer",             name: "Hammer",            marker: { x: "20.5%", y: "4.5%" } },
+          { id: 5, ref: "anvil",              name: "Anvil",             marker: { x: "38.0%", y: "4.5%" } },
+          { id: 6, ref: "stirrup",            name: "Stirrup",           marker: { x: "21.5%", y: "95.0%" } },
+          { id: 7, ref: "oval-window",        name: "Oval window",       marker: { x: "52.0%", y: "4.5%" } },
+
+          { id: 8, ref: "round-window",       name: "Round window",      marker: { x: "38.5%", y: "95.0%" } },
+          { id: 9, ref: "eustachian-tube",    name: "Eustachian tube",   marker: { x: "56.0%", y: "95.0%" } }
+        ]
+      },
+
+      {
+        id: "cochlear-chambers",
+        shortTitle: "Cochlear Chambers",
+        title: "Part 2: Inside the Cochlea",
+        instructions: "Match the main cochlear chambers and their fluids.",
+        completionMessage: "Great job. The cochlea contains fluid-filled chambers. Movement through these fluids helps stimulate the sensory cells involved in hearing.",
+        items: [
+          { id: 1, ref: "scala-vestibuli", name: "Scala vestibuli", marker: { x: "54.5%", y: "7.0%" } },
+          { id: 2, ref: "cochlear-duct",   name: "Cochlear duct",   marker: { x: "63.5%", y: "7.0%" } },
+          { id: 3, ref: "scala-tympani",   name: "Scala tympani",   marker: { x: "50.5%", y: "91.0%" } },
+          { id: 4, ref: "endolymph",       name: "Endolymph",       marker: { x: "78.5%", y: "91.0%" } },
+          { id: 5, ref: "perilymph",       name: "Perilymph",       marker: { x: "82.0%", y: "7.0%" } }
+        ]
+      },
+
+      {
+        id: "cochlea-hair-cells",
+        shortTitle: "Cochlea & Hair Cells",
+        title: "Part 3: Cochlear Chambers and Hair Cells",
+        instructions: "Match the key chambers and sensory structures of the cochlea.",
+        completionMessage: "Great job. The cochlear duct sits between the scala vestibuli and scala tympani. Hair cells inside it detect fluid movement, and endolymph carries those vibrations to the hair cells.",
+        items: [
+          { id: 1, ref: "hair-cells",      name: "Hair cells",      marker: { x: "68.0%", y: "91.0%" } },
+          { id: 2, ref: "cochlear-duct",   name: "Cochlear duct",   marker: { x: "64.0%", y: "7.0%" } },
+          { id: 3, ref: "endolymph",       name: "Endolymph",       marker: { x: "48.2%", y: "90.5%" } },
+          { id: 4, ref: "scala-vestibuli", name: "Scala vestibuli", marker: { x: "53.0%", y: "7.0%" } },
+          { id: 5, ref: "scala-tympani",   name: "Scala tympani",   marker: { x: "53.0%", y: "91.0%" } }
+        ]
+      }
+    ];
+
+    const studyNotes = [
+      {
+        ids: ["sound-waves", "external-ear"],
+        text: "<strong>Sound waves</strong> enter through the <strong>external ear</strong> and travel through the ear canal toward the tympanic membrane."
+      },
+      {
+        ids: ["tympanic-membrane"],
+        text: "The <strong>tympanic membrane</strong>, or eardrum, vibrates when sound reaches it. This changes air movement into mechanical movement."
+      },
+      {
+        ids: ["hammer", "anvil", "stirrup"],
+        text: "The three ossicles pass the vibration across the middle ear: <strong>hammer → anvil → stirrup</strong>."
+      },
+      {
+        ids: ["oval-window", "round-window"],
+        text: "The <strong>stirrup</strong> pushes on the <strong>oval window</strong>, sending vibrations into the cochlea. The <strong>round window</strong> helps relieve pressure as fluid moves."
+      },
+      {
+        ids: ["eustachian-tube"],
+        text: "The <strong>Eustachian tube</strong> helps equalize air pressure in the middle ear, which allows the tympanic membrane to vibrate properly."
+      },
+      {
+        ids: ["uncoiled-cochlea"],
+        text: "This diagram shows the <strong>cochlea uncoiled</strong>. In the body, the cochlea is spiral-shaped, but uncoiling it makes the chambers easier to compare."
+      },
+      {
+        ids: ["scala-vestibuli", "scala-tympani", "perilymph"],
+        text: "The <strong>scala vestibuli</strong> is the upper chamber and the <strong>scala tympani</strong> is the lower chamber. Both contain <strong>perilymph</strong>."
+      },
+      {
+        ids: ["cochlear-duct", "endolymph"],
+        text: "The <strong>cochlear duct</strong> is the central chamber. It contains <strong>endolymph</strong>, a fluid that helps carry movement to the sensory cells."
+      },
+      {
+        ids: ["hair-cells", "cochlear-duct", "endolymph"],
+        text: "<strong>Hair cells</strong> sit along the cochlear duct. When fluid movement bends them, they help convert vibration into electrical signals."
+      },
+      {
+        ids: ["sound-waves", "external-ear", "tympanic-membrane", "hammer", "anvil", "stirrup", "oval-window", "cochlear-duct", "hair-cells"],
+        text: "<strong>Full pathway:</strong> sound waves enter the ear, vibrate the tympanic membrane, move the ossicles, push on the oval window, create fluid waves in the cochlea, and stimulate hair cells."
+      }
+    ];
+
+    // ─── DOM refs ────────────────────────────────────────────────────────────
+
+    const activityCard      = document.getElementById("activityCard");
+    const imageStage        = document.getElementById("imageStage");
+    const leaderSvg         = document.getElementById("leaderSvg");
+    const labelsContainer   = document.getElementById("labels");
+    const slotsContainer    = document.getElementById("slots");
+    const scoreElement      = document.getElementById("score");
+    const statusElement     = document.getElementById("status");
+    const resetButton       = document.getElementById("resetButton");
+    const wrapupResetButton = document.getElementById("wrapupResetButton");
+    const startWrapupButton = document.getElementById("startWrapupButton");
+    const completionPrompt  = document.getElementById("completionPrompt");
+    const completionText    = document.getElementById("completionText");
+    const shuffleButton     = document.getElementById("shuffleButton");
+    const keyButton         = document.getElementById("keyButton");
+    const noteText          = document.getElementById("noteText");
+    const notesCount        = document.getElementById("notesCount");
+    const prevNoteButton    = document.getElementById("prevNoteButton");
+    const nextNoteButton    = document.getElementById("nextNoteButton");
+    const noteDots          = document.getElementById("noteDots");
+    const activityTitle     = document.getElementById("activityTitle");
+    const partInstructions  = document.getElementById("partInstructions");
+    const partTabs          = document.getElementById("partTabs");
+
+    // ─── Image load diagnostic (dev only — no student-facing output) ─────────
+    (function() {
+      const bgImage = imageStage.querySelector("img");
+      bgImage.addEventListener("error", () => {
+        console.error("Background image failed to load:", bgImage.getAttribute("src"));
+      });
+      bgImage.addEventListener("load", () => {
+        console.log("Background image loaded:", bgImage.getAttribute("src"));
+      });
+    })();
+
+    // ─── State ───────────────────────────────────────────────────────────────
+
+    let currentPartIndex = 0;
+    let placedByPart     = {};
+    let labelOrderByPart = {};
+    let currentNote      = 0;
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    function getCurrentPart()  { return activityParts[currentPartIndex]; }
+    function getCurrentItems() { return getCurrentPart().items; }
+
+    function getCurrentPlaced() {
+      const id = getCurrentPart().id;
+      if (!placedByPart[id]) placedByPart[id] = new Set();
+      return placedByPart[id];
+    }
+
+    function getCurrentLabelOrder() {
+      const id = getCurrentPart().id;
+      if (!labelOrderByPart[id]) labelOrderByPart[id] = shuffle(getCurrentItems());
+      return labelOrderByPart[id];
+    }
+
+    function setCurrentLabelOrder(newOrder) {
+      labelOrderByPart[getCurrentPart().id] = newOrder;
+    }
+
+    function getOverallScore() {
+      return activityParts.reduce((total, part) => {
+        const s = placedByPart[part.id];
+        return total + (s ? s.size : 0);
+      }, 0);
+    }
+
+    function getOverallTotal() {
+      return activityParts.reduce((total, part) => total + part.items.length, 0);
+    }
+
+    function isPartComplete(part) {
+      const s = placedByPart[part.id];
+      return s && s.size === part.items.length;
+    }
+
+    function isActivityComplete() {
+      return activityParts.every(isPartComplete);
+    }
+
+    function shuffle(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function percentNumber(value) {
+      return Number(String(value).replace("%", ""));
+    }
+
+    function setStatus(message, type = "neutral") {
+      if (!statusElement) return;
+      statusElement.innerHTML = message;
+      statusElement.classList.remove("good", "bad");
+      if (type === "good") statusElement.classList.add("good");
+      if (type === "bad")  statusElement.classList.add("bad");
+    }
+
+    // ─── Score / tabs ────────────────────────────────────────────────────────
+
+    function updateScore() {
+      const part   = getCurrentPart();
+      const placed = getCurrentPlaced();
+      scoreElement.textContent = `Score: ${placed.size}/${part.items.length} | Overall: ${getOverallScore()}/${getOverallTotal()}`;
+      if (placed.size === part.items.length) {
+        showCompletionPrompt(part.completionMessage);
+      } else {
+        completionPrompt.classList.remove("show");
+      }
+      renderPartTabs();
+      if (isActivityComplete()) {
+        setStatus("<strong>Activity complete!</strong> You mapped the full pathway of sound from the outer ear to the brain.", "good");
+      }
+    }
+
+    function renderPartTabs() {
+      partTabs.innerHTML = "";
+      activityParts.forEach((part, index) => {
+        const btn = document.createElement("button");
+        btn.type      = "button";
+        btn.className = "part-tab";
+        if (index === currentPartIndex) btn.classList.add("active");
+        if (isPartComplete(part))       btn.classList.add("complete");
+        const check = isPartComplete(part) ? `<span class="checkmark">✓</span>` : "";
+        btn.innerHTML = `${check}${index + 1}. ${part.shortTitle}`;
+        btn.addEventListener("click", () => { currentPartIndex = index; renderCurrentPart(); });
+        partTabs.appendChild(btn);
+      });
+    }
+
+    // ─── Marker / SVG building ────────────────────────────────────────────────
+    //
+    // All marker and line coordinates are percentages within the image canvas.
+    // The SVG viewBox is "0 0 100 100" with preserveAspectRatio="none", so
+    // passing percentNumber("4.0%") = 4 directly maps to 4% of image width/height.
+    // No getBoundingClientRect is used.
+
+    function buildMarkersInto(items, placed, isWrapup) {
+      // Clear existing markers and SVG
+      imageStage.querySelectorAll(".diagram-number").forEach(el => el.remove());
+      leaderSvg.innerHTML = "";
+
+      const NS = "http://www.w3.org/2000/svg";
+
+      items.forEach(item => {
+        const ht = hotspotTargets[item.ref];
+        if (!ht) return;
+
+        const markerPos  = isWrapup ? ht.wrapupMarker : item.marker;
+        const displayNum = isWrapup ? ht.num : item.id;
+        const isCorrect  = placed && placed.has(item.id);
+
+        // Draw one line + dot per target
+        ht.targets.forEach((target, targetIndex) => {
+          const line = document.createElementNS(NS, "line");
+          line.classList.add("pointer-line");
+          if (isCorrect) line.classList.add("correct");
+          if (isWrapup)  line.classList.add("dim");
+          line.dataset.partId      = item.id;
+          line.dataset.refId       = item.ref;
+          line.dataset.targetIndex = targetIndex;
+          line.setAttribute("x1", percentNumber(markerPos.x));
+          line.setAttribute("y1", percentNumber(markerPos.y));
+          line.setAttribute("x2", percentNumber(target.x));
+          line.setAttribute("y2", percentNumber(target.y));
+          leaderSvg.appendChild(line);
+
+          const dot = document.createElementNS(NS, "circle");
+          dot.classList.add("tip-dot");
+          if (isCorrect) dot.classList.add("correct");
+          if (isWrapup)  dot.classList.add("dim");
+          dot.dataset.partId      = item.id;
+          dot.dataset.refId       = item.ref;
+          dot.dataset.targetIndex = targetIndex;
+          dot.setAttribute("cx", percentNumber(target.x));
+          dot.setAttribute("cy", percentNumber(target.y));
+          dot.setAttribute("r", "0.65");
+          leaderSvg.appendChild(dot);
+        });
+
+        // Number circle
+        const marker = document.createElement("div");
+        marker.className = "diagram-number";
+        if (isCorrect) marker.classList.add("correct");
+        if (isWrapup)  marker.classList.add("dim");
+        marker.textContent = displayNum;
+        marker.dataset.partId = item.id;
+        marker.dataset.refId  = item.ref;
+        marker.style.setProperty("--x", markerPos.x);
+        marker.style.setProperty("--y", markerPos.y);
+        imageStage.appendChild(marker);
+      });
+    }
+
+    function createDiagramNumbers() {
+      buildMarkersInto(getCurrentItems(), getCurrentPlaced(), false);
+    }
+
+    function createWrapupMarkers() {
+      const wrapupItems = Object.entries(hotspotTargets).map(([ref]) => ({ id: ref, ref }));
+      buildMarkersInto(wrapupItems, null, true);
+    }
+
+    // ─── Wrap-up highlighting ─────────────────────────────────────────────────
+
+    function highlightWrapupItems(ids) {
+      imageStage.querySelectorAll(".diagram-number[data-ref-id]").forEach(el => {
+        const active = ids.includes(el.dataset.refId);
+        el.classList.toggle("dim",          !active);
+        el.classList.toggle("wrapup-active", active);
+      });
+      leaderSvg.querySelectorAll(".pointer-line, .tip-dot").forEach(el => {
+        const active = ids.includes(el.dataset.refId);
+        el.classList.toggle("dim",          !active);
+        el.classList.toggle("wrapup-active", active);
+      });
+    }
+
+    // ─── Render ──────────────────────────────────────────────────────────────
+
+    function renderCurrentPart() {
+      const part   = getCurrentPart();
+      const placed = getCurrentPlaced();
+
+      activityTitle.textContent    = part.title;
+      partInstructions.textContent = part.instructions;
+      activityCard.classList.remove("wrapup-mode", "notes-mode");
+      completionPrompt.classList.remove("show");
+
+      createDiagramNumbers();
+      createSlots();
+
+      part.items.forEach(item => {
+        if (placed.has(item.id)) setCorrectAnswer(item, false);
+      });
+
+      createLabels();
+      updateScore();
+
+      keyButton.textContent  = "Show answer key";
+      keyButton.disabled     = false;
+      shuffleButton.disabled = placed.size === part.items.length;
+
+      setStatus("Drag a label from the left column into the correct numbered box.");
+      renderPartTabs();
+    }
+
+    function createLabels() {
+      labelsContainer.innerHTML = "";
+      const placed = getCurrentPlaced();
+      getCurrentLabelOrder()
+        .filter(item => !placed.has(item.id))
+        .forEach(item => {
+          const chip = document.createElement("div");
+          chip.className    = "label-chip";
+          chip.textContent  = item.name;
+          chip.tabIndex     = 0;
+          chip.draggable    = true;
+          chip.dataset.partId = item.id;
+
+          chip.addEventListener("dragstart", event => {
+            chip.classList.add("dragging");
+            event.dataTransfer.setData("text/plain", String(item.id));
+            event.dataTransfer.effectAllowed = "move";
+          });
+          chip.addEventListener("dragend", () => chip.classList.remove("dragging"));
+          labelsContainer.appendChild(chip);
+        });
+    }
+
+    function createSlots() {
+      slotsContainer.innerHTML = "";
+      getCurrentItems().forEach(item => {
+        const row = document.createElement("div");
+        row.className = "slot-row";
+
+        const number = document.createElement("div");
+        number.className = "slot-number";
+        number.textContent = item.id;
+        number.dataset.partId = item.id;
+
+        const slot = document.createElement("div");
+        slot.className = "drop-slot";
+        slot.dataset.partId = item.id;
+        slot.setAttribute("aria-label", `Drop answer for number ${item.id}`);
+
+        slot.addEventListener("dragover", event => {
+          if (getCurrentPlaced().has(item.id)) return;
+          event.preventDefault();
+          slot.classList.add("drag-over");
+        });
+        slot.addEventListener("dragleave", () => slot.classList.remove("drag-over"));
+        slot.addEventListener("drop", event => {
+          event.preventDefault();
+          slot.classList.remove("drag-over");
+          if (getCurrentPlaced().has(item.id)) return;
+          const draggedId = Number(event.dataTransfer.getData("text/plain"));
+          checkAnswer(draggedId, item.id, slot);
+        });
+
+        row.appendChild(number);
+        row.appendChild(slot);
+        slotsContainer.appendChild(row);
+      });
+    }
+
+    // ─── Answer logic ────────────────────────────────────────────────────────
+
+    function setCorrectAnswer(item, showMessage = true) {
+      getCurrentPlaced().add(item.id);
+
+      const slot = slotsContainer.querySelector(`.drop-slot[data-part-id="${item.id}"]`);
+      if (slot) {
+        slot.classList.remove("incorrect", "drag-over");
+        slot.classList.add("correct");
+        slot.innerHTML = `<span class="placed-text">${item.name}</span>`;
+      }
+
+      const slotNumber = slotsContainer.querySelector(`.slot-number[data-part-id="${item.id}"]`);
+      if (slotNumber) slotNumber.classList.add("correct");
+
+      const marker = imageStage.querySelector(`.diagram-number[data-part-id="${item.id}"]`);
+      if (marker) {
+        marker.classList.add("correct", "pop");
+        window.setTimeout(() => marker.classList.remove("pop"), 400);
+      }
+
+      // Turn all matching lines and dots green
+      leaderSvg.querySelectorAll(`.pointer-line[data-part-id="${item.id}"]`).forEach(l => l.classList.add("correct"));
+      leaderSvg.querySelectorAll(`.tip-dot[data-part-id="${item.id}"]`).forEach(d => d.classList.add("correct"));
+
+      if (showMessage) {
+        setStatus(`<strong>Correct!</strong> ${item.name} matches number ${item.id}.`, "good");
+      }
+    }
+
+    function checkAnswer(labelId, targetId, slot) {
+      const items  = getCurrentItems();
+      const label  = items.find(p => p.id === labelId);
+      const target = items.find(p => p.id === targetId);
+      if (!label || !target) return;
+
+      if (labelId === targetId) {
+        setCorrectAnswer(label, true);
+        createLabels();
+        updateScore();
+      } else {
+        slot.classList.add("incorrect");
+        setStatus(`<strong>Try again.</strong> ${label.name} does not match number ${targetId}.`, "bad");
+        window.setTimeout(() => slot.classList.remove("incorrect"), 300);
+      }
+    }
+
+    // ─── Completion ──────────────────────────────────────────────────────────
+
+    function showCompletionPrompt(message = "") {
+      completionText.textContent = message;
+      completionPrompt.classList.add("show");
+      shuffleButton.disabled = true;
+      startWrapupButton.textContent = isActivityComplete() ? "Wrap Up" : "Next Part →";
+    }
+
+    // ─── Reset ───────────────────────────────────────────────────────────────
+
+    function resetCurrentPart() {
+      const part = getCurrentPart();
+      placedByPart[part.id]     = new Set();
+      labelOrderByPart[part.id] = shuffle(part.items);
+
+      activityCard.classList.remove("wrapup-mode", "notes-mode");
+      completionPrompt.classList.remove("show");
+
+      createDiagramNumbers();
+      createSlots();
+      createLabels();
+      updateScore();
+
+      setStatus("Drag a label from the left column into the correct numbered box.");
+      keyButton.textContent  = "Show answer key";
+      keyButton.disabled     = false;
+      shuffleButton.disabled = false;
+    }
+
+    function resetActivity() {
+      placedByPart     = {};
+      labelOrderByPart = {};
+
+      activityParts.forEach(part => {
+        placedByPart[part.id]     = new Set();
+        labelOrderByPart[part.id] = shuffle(part.items);
+      });
+
+      currentPartIndex = 0;
+      activityCard.classList.remove("wrapup-mode", "notes-mode");
+      completionPrompt.classList.remove("show");
+      keyButton.textContent  = "Show answer key";
+      keyButton.disabled     = false;
+      shuffleButton.disabled = false;
+
+      renderCurrentPart();
+      showNote(0, false);
+    }
+
+    // ─── Shuffle / answer key ────────────────────────────────────────────────
+
+    function shuffleUnplacedLabels() {
+      const placed       = getCurrentPlaced();
+      const currentOrder = getCurrentLabelOrder();
+      const unplaced     = shuffle(currentOrder.filter(p => !placed.has(p.id)));
+      const placedItems  = currentOrder.filter(p => placed.has(p.id));
+      setCurrentLabelOrder([...unplaced, ...placedItems]);
+      createLabels();
+    }
+
+    function revealAnswerKey() {
+      const part      = getCurrentPart();
+      const partId    = part.id;
+      const placed    = placedByPart[partId] || (placedByPart[partId] = new Set());
+      const remaining = part.items.filter(p => !placed.has(p.id));
+
+      if (remaining.length === 0) { showCompletionPrompt(part.completionMessage); return; }
+
+      setStatus("Answer key revealed. Correct labels are being placed in green.", "good");
+      remaining.forEach((item, index) => {
+        window.setTimeout(() => {
+          placedByPart[partId].add(item.id);
+
+          if (getCurrentPart().id === partId) {
+            const slot = slotsContainer.querySelector(`.drop-slot[data-part-id="${item.id}"]`);
+            if (slot) {
+              slot.classList.remove("incorrect", "drag-over");
+              slot.classList.add("correct");
+              slot.innerHTML = `<span class="placed-text">${item.name}</span>`;
+            }
+            const slotNum = slotsContainer.querySelector(`.slot-number[data-part-id="${item.id}"]`);
+            if (slotNum) slotNum.classList.add("correct");
+
+            const marker = imageStage.querySelector(`.diagram-number[data-part-id="${item.id}"]`);
+            if (marker) {
+              marker.classList.add("correct", "pop");
+              window.setTimeout(() => marker.classList.remove("pop"), 400);
+            }
+            leaderSvg.querySelectorAll(`.pointer-line[data-part-id="${item.id}"]`).forEach(l => l.classList.add("correct"));
+            leaderSvg.querySelectorAll(`.tip-dot[data-part-id="${item.id}"]`).forEach(d => d.classList.add("correct"));
+
+            createLabels();
+            updateScore();
+          } else {
+            renderPartTabs();
+            scoreElement.textContent = `Score: ${getCurrentPlaced().size}/${getCurrentPart().items.length} | Overall: ${getOverallScore()}/${getOverallTotal()}`;
+            if (isActivityComplete() && completionPrompt.classList.contains("show")) {
+              startWrapupButton.textContent = "Wrap Up";
+            }
+          }
+        }, index * 120);
+      });
+
+      keyButton.textContent = "Answer key shown";
+      keyButton.disabled    = true;
+    }
+
+    // ─── Study notes ─────────────────────────────────────────────────────────
+
+    function createNoteDots() {
+      noteDots.innerHTML = "";
+      studyNotes.forEach((_, index) => {
+        const dot = document.createElement("span");
+        dot.className = "note-dot";
+        if (index === currentNote) dot.classList.add("active");
+        noteDots.appendChild(dot);
+      });
+    }
+
+    function showNote(index, animate = true) {
+      currentNote = Math.max(0, Math.min(index, studyNotes.length - 1));
+
+      const update = () => {
+        const note = studyNotes[currentNote];
+        noteText.innerHTML = note.text;
+        notesCount.textContent = `Note ${currentNote + 1} of ${studyNotes.length}`;
+        prevNoteButton.disabled = currentNote === 0;
+        nextNoteButton.disabled = currentNote === studyNotes.length - 1;
+        createNoteDots();
+
+        if (note.ids && activityCard.classList.contains("notes-mode")) {
+          highlightWrapupItems(note.ids);
+        }
+
+        noteText.classList.remove("fade-out");
+        if (animate) {
+          noteText.classList.remove("fade-in");
+          void noteText.offsetWidth;
+          noteText.classList.add("fade-in");
+        }
+      };
+
+      if (animate) {
+        noteText.classList.add("fade-out");
+        window.setTimeout(update, 170);
+      } else {
+        update();
+      }
+    }
+
+    function startStudyNotes() {
+      activityCard.classList.add("wrapup-mode", "notes-mode");
+      createWrapupMarkers();
+      showNote(0, false);
+    }
+
+    // ─── Event listeners ─────────────────────────────────────────────────────
+
+    prevNoteButton.addEventListener("click", () => showNote(currentNote - 1, true));
+    nextNoteButton.addEventListener("click", () => showNote(currentNote + 1, true));
+    resetButton.addEventListener("click", resetCurrentPart);
+    wrapupResetButton.addEventListener("click", resetActivity);
+    shuffleButton.addEventListener("click", shuffleUnplacedLabels);
+    keyButton.addEventListener("click", revealAnswerKey);
+
+    startWrapupButton.addEventListener("click", () => {
+      if (isActivityComplete()) { startStudyNotes(); return; }
+      const nextIndex = activityParts.findIndex((part, index) =>
+        index > currentPartIndex && !isPartComplete(part)
+      );
+      currentPartIndex = nextIndex !== -1 ? nextIndex : Math.min(currentPartIndex + 1, activityParts.length - 1);
+      renderCurrentPart();
+    });
+
+    resetActivity();
+
+    // ─── Edit mode (?edit=1) ─────────────────────────────────────────────────
+    (function initEditMode() {
+      if (!new URLSearchParams(window.location.search).has("edit")) return;
+
+      // ── Setup ──────────────────────────────────────────────────────────────
+      document.body.classList.add("edit-mode");
+      // Enable pointer events on SVG so tip-dots can be grabbed
+      leaderSvg.style.pointerEvents = "all";
+
+      // ── Editor panel ───────────────────────────────────────────────────────
+      const panel = document.createElement("div");
+      panel.id = "editPanel";
+      panel.innerHTML =
+        '<div class="ep-header">✏ EDIT MODE</div>' +
+        '<div class="ep-label">Part</div>' +
+        '<div class="ep-info" id="epPartTitle">—</div>' +
+        '<div class="ep-label">Selected</div>' +
+        '<div class="ep-info" id="epSelected">—</div>' +
+        '<div class="ep-label">Coordinates</div>' +
+        '<div class="ep-info ep-coords" id="epCoords">x: —&nbsp; y: —</div>' +
+        '<div class="ep-hint">Drag blue circles → numbered markers<br>' +
+        'Drag orange dots → anatomical targets<br>' +
+        'Student drag/drop disabled.</div>' +
+        '<hr class="ep-hr">' +
+        '<button class="ep-btn ep-btn-primary" id="epCopyAll">📋 Copy ALL data</button>' +
+        '<button class="ep-btn" id="epCopyMarkers">Copy current part markers</button>' +
+        '<button class="ep-btn" id="epCopyTargets">Copy current part targets</button>' +
+        '<textarea id="epOutput" class="ep-output" rows="6" readonly ' +
+        'placeholder="Output appears here…"></textarea>';
+      document.body.appendChild(panel);
+
+      const epPartTitle = document.getElementById("epPartTitle");
+      const epSelected  = document.getElementById("epSelected");
+      const epCoords    = document.getElementById("epCoords");
+      const epOutput    = document.getElementById("epOutput");
+
+      function refreshPanelPart() {
+        epPartTitle.textContent = getCurrentPart().shortTitle;
+      }
+      refreshPanelPart();
+
+      function setPanelSelection(type, ref, itemId, targetIdx, x, y) {
+        epSelected.textContent = type === "marker"
+          ? "marker #" + itemId + "  (" + ref + ")"
+          : "target: " + ref + " [" + targetIdx + "]";
+        epCoords.textContent = "x: " + x + "   y: " + y;
+      }
+
+      // ── Coordinate helper ──────────────────────────────────────────────────
+      function toPct(clientX, clientY) {
+        const rect = imageStage.getBoundingClientRect();
+        const xv = Math.max(0, Math.min(100, ((clientX - rect.left)  / rect.width)  * 100));
+        const yv = Math.max(0, Math.min(100, ((clientY - rect.top)   / rect.height) * 100));
+        return { x: xv.toFixed(1) + "%", y: yv.toFixed(1) + "%" };
+      }
+
+      // ── Marker drag (blue numbered circles) ───────────────────────────────
+      function attachMarkerDrag(el) {
+        el.style.cursor = "grab";
+        let dragging = false;
+
+        el.addEventListener("pointerdown", e => {
+          e.stopPropagation();
+          dragging = true;
+          el.setPointerCapture(e.pointerId);
+          el.style.cursor     = "grabbing";
+          el.style.boxShadow  = "0 0 0 3px #f59e0b, 0 3px 8px rgba(0,0,0,0.35)";
+          el.style.zIndex     = "10";
+        });
+
+        el.addEventListener("pointermove", e => {
+          if (!dragging) return;
+          const { x, y } = toPct(e.clientX, e.clientY);
+          const ref    = el.dataset.refId;
+          const partId = el.dataset.partId;
+
+          el.style.setProperty("--x", x);
+          el.style.setProperty("--y", y);
+
+          // Update data model (current part only — markers are per-part)
+          const item = getCurrentPart().items.find(it => String(it.id) === partId);
+          if (item) { item.marker.x = x; item.marker.y = y; }
+
+          // Update all lines originating from this marker
+          leaderSvg.querySelectorAll(
+            '.pointer-line[data-ref-id="' + ref + '"][data-part-id="' + partId + '"]'
+          ).forEach(line => {
+            line.setAttribute("x1", percentNumber(x));
+            line.setAttribute("y1", percentNumber(y));
+          });
+
+          setPanelSelection("marker", ref, partId, null, x, y);
+        });
+
+        el.addEventListener("pointerup", () => {
+          if (!dragging) return;
+          dragging = false;
+          el.style.cursor    = "grab";
+          el.style.boxShadow = "";
+          el.style.zIndex    = "4";
+        });
+      }
+
+      // ── Target dot drag (SVG circles) ──────────────────────────────────────
+      function attachDotDrag(el) {
+        el.setAttribute("r", "1.8");
+        el.style.fill   = "#f97316";
+        el.style.stroke = "#c2410c";
+        el.style.cursor = "grab";
+        let dragging = false;
+
+        el.addEventListener("pointerdown", e => {
+          e.stopPropagation();
+          dragging = true;
+          el.setPointerCapture(e.pointerId);
+          el.setAttribute("r", "2.6");
+        });
+
+        el.addEventListener("pointermove", e => {
+          if (!dragging) return;
+          const { x, y } = toPct(e.clientX, e.clientY);
+          const ref  = el.dataset.refId;
+          const tIdx = Number(el.dataset.targetIndex || 0);
+          const xNum = percentNumber(x);
+          const yNum = percentNumber(y);
+
+          el.setAttribute("cx", xNum);
+          el.setAttribute("cy", yNum);
+
+          // Update data model (anatomical — hotspotTargets)
+          const ht = hotspotTargets[ref];
+          if (ht && ht.targets[tIdx]) {
+            ht.targets[tIdx].x = x;
+            ht.targets[tIdx].y = y;
+          }
+
+          // Update all lines ending at this target
+          leaderSvg.querySelectorAll(
+            '.pointer-line[data-ref-id="' + ref + '"][data-target-index="' + tIdx + '"]'
+          ).forEach(line => {
+            line.setAttribute("x2", xNum);
+            line.setAttribute("y2", yNum);
+          });
+
+          setPanelSelection("target", ref, null, tIdx, x, y);
+        });
+
+        el.addEventListener("pointerup", () => {
+          if (!dragging) return;
+          dragging = false;
+          el.setAttribute("r", "1.8");
+        });
+      }
+
+      // ── MutationObservers — auto-attach when elements are re-rendered ──────
+      new MutationObserver(muts => {
+        muts.forEach(m => m.addedNodes.forEach(n => {
+          if (n.nodeType === 1 && n.classList && n.classList.contains("diagram-number")) {
+            attachMarkerDrag(n);
+          }
+        }));
+        refreshPanelPart();
+      }).observe(imageStage, { childList: true });
+
+      new MutationObserver(muts => {
+        muts.forEach(m => m.addedNodes.forEach(n => {
+          if (n.nodeType === 1 && n.classList && n.classList.contains("tip-dot")) {
+            attachDotDrag(n);
+          }
+        }));
+      }).observe(leaderSvg, { childList: true });
+
+      new MutationObserver(muts => {
+        muts.forEach(m => m.addedNodes.forEach(n => {
+          if (n.nodeType === 1 && n.classList && n.classList.contains("label-chip")) {
+            n.draggable = false;
+            n.style.cursor  = "not-allowed";
+            n.style.opacity = "0.38";
+            n.title = "Disabled in edit mode";
+          }
+        }));
+      }).observe(labelsContainer, { childList: true });
+
+      // Attach to elements already on-screen at page load
+      imageStage.querySelectorAll(".diagram-number").forEach(attachMarkerDrag);
+      leaderSvg.querySelectorAll(".tip-dot").forEach(attachDotDrag);
+      labelsContainer.querySelectorAll(".label-chip").forEach(n => {
+        n.draggable = false;
+        n.style.cursor  = "not-allowed";
+        n.style.opacity = "0.38";
+      });
+
+      // ── Copy helpers ───────────────────────────────────────────────────────
+      function writeOutput(text) {
+        epOutput.value = text;
+        try { epOutput.select(); } catch(err) {}
+        if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+      }
+
+      document.getElementById("epCopyAll").addEventListener("click", () => {
+        const htStr = "const hotspotTargets = " +
+          JSON.stringify(hotspotTargets, null, 2) + ";\n\n";
+        const apCopy = activityParts.map(part => ({
+          id: part.id,
+          shortTitle: part.shortTitle,
+          title: part.title,
+          instructions: part.instructions,
+          completionMessage: part.completionMessage,
+          items: part.items.map(it => ({
+            id: it.id, ref: it.ref, name: it.name,
+            marker: { x: it.marker.x, y: it.marker.y }
+          }))
+        }));
+        writeOutput(htStr + "const activityParts = " +
+          JSON.stringify(apCopy, null, 2) + ";");
+      });
+
+      document.getElementById("epCopyMarkers").addEventListener("click", () => {
+        const part = getCurrentPart();
+        writeOutput("// " + part.title + " — markers\n" +
+          JSON.stringify(
+            part.items.map(it => ({ id: it.id, ref: it.ref,
+              marker: { x: it.marker.x, y: it.marker.y } })),
+            null, 2));
+      });
+
+      document.getElementById("epCopyTargets").addEventListener("click", () => {
+        const part = getCurrentPart();
+        const refs = [...new Set(part.items.map(it => it.ref))];
+        const out  = {};
+        refs.forEach(ref => {
+          if (hotspotTargets[ref]) out[ref] = { targets: hotspotTargets[ref].targets };
+        });
+        writeOutput("// " + part.title + " — targets\nconst updatedTargets = " +
+          JSON.stringify(out, null, 2) + ";");
+      });
+
+    })();
+
+    // ─── Debug mode (?debug=1) ────────────────────────────────────────────────
+    // ?debug=1           → grid + target labels for the current part only
+    // ?debug=1&debugAll=1 → grid + target labels for all hotspotTargets
+    (function initDebugMode() {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has("debug")) return;
+      const showAll = params.has("debugAll");
+      const NS = "http://www.w3.org/2000/svg";
+
+      // ── Coordinate grid — rendered once, stays fixed ──────────────────────
+      const gridSvg = document.createElementNS(NS, "svg");
+      gridSvg.className = "debug-grid-svg";
+      gridSvg.setAttribute("viewBox", "0 0 100 100");
+      gridSvg.setAttribute("preserveAspectRatio", "none");
+      gridSvg.setAttribute("aria-hidden", "true");
+      gridSvg.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:20;overflow:visible;";
+      for (let i = 5; i < 100; i += 5) {
+        const isMajor = i % 10 === 0;
+        [["x1", i, "y1", 0, "x2", i, "y2", 100], ["x1", 0, "y1", i, "x2", 100, "y2", i]].forEach(attrs => {
+          const el = document.createElementNS(NS, "line");
+          for (let j = 0; j < attrs.length; j += 2) el.setAttribute(attrs[j], attrs[j + 1]);
+          el.setAttribute("stroke", isMajor ? "rgba(220,38,38,0.35)" : "rgba(37,99,235,0.18)");
+          el.setAttribute("stroke-width", "0.3");
+          el.setAttribute("vector-effect", "non-scaling-stroke");
+          gridSvg.appendChild(el);
+        });
+        if (isMajor) {
+          [[i + "%", i + "%", "2.5%"], [i + "%", "1.8%", i + "%"]].forEach(([text, left, top]) => {
+            const lbl = document.createElement("div");
+            lbl.className = "debug-grid-label";
+            lbl.textContent = text;
+            lbl.style.cssText = `position:absolute;left:${left};top:${top};transform:translate(-50%,-50%);font-size:8px;color:rgba(220,38,38,0.75);pointer-events:none;z-index:22;font-weight:800;background:#fff;padding:0 1px;border-radius:2px;`;
+            imageStage.appendChild(lbl);
+          });
+        }
+      }
+      imageStage.appendChild(gridSvg);
+
+      // ── Per-part target labels — re-rendered on part change ───────────────
+      function renderDebugTargetLabels() {
+        imageStage.querySelectorAll(".debug-target-dot, .debug-target-label").forEach(el => el.remove());
+
+        const sources = showAll
+          ? Object.entries(hotspotTargets)
+          : getCurrentItems()
+              .map(item => [item.ref, hotspotTargets[item.ref]])
+              .filter(([, ht]) => ht);
+
+        sources.forEach(([ref, ht]) => {
+          ht.targets.forEach(target => {
+            const dot = document.createElement("div");
+            dot.className = "debug-target-dot";
+            dot.style.cssText = `position:absolute;left:${target.x};top:${target.y};width:8px;height:8px;background:#dc2626;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);z-index:23;pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,0.3);`;
+            imageStage.appendChild(dot);
+            const lbl = document.createElement("div");
+            lbl.className = "debug-target-label";
+            lbl.textContent = ref;
+            lbl.style.cssText = `position:absolute;left:${target.x};top:${target.y};transform:translate(-50%,calc(-50% + 7px));font-size:9px;font-weight:700;color:#991b1b;background:#fff;border:1px solid rgba(220,38,38,0.5);padding:1px 3px;border-radius:3px;z-index:24;pointer-events:none;white-space:nowrap;line-height:1.3;`;
+            imageStage.appendChild(lbl);
+          });
+        });
+      }
+
+      renderDebugTargetLabels();
+
+      // Re-render target labels whenever part markers are rebuilt (tab switch / reset)
+      new MutationObserver(muts => {
+        const markersAdded = muts.some(m =>
+          [...m.addedNodes].some(n => n.classList && n.classList.contains("diagram-number"))
+        );
+        if (markersAdded) renderDebugTargetLabels();
+      }).observe(imageStage, { childList: true });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hormone Regulation: Feedback Loops</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --teal: #0f766e;
+      --amber: #d97706;
+      --amber-soft: #fef3c7;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #64748b;
+      --border: #dbe3ef;
+      --shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: #e5eef8;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .slide-stage {
+      width: min(100vw - 20px, 1280px);
+      aspect-ratio: 16 / 9;
+      max-height: calc(100vh - 20px);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: auto 1fr auto auto auto;
+      gap: 8px;
+      padding: 14px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+      min-height: 72px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: clamp(22px, 2.4vw, 34px);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+    }
+
+    .header p {
+      margin: 4px 0 0;
+      font-size: clamp(13px, 1.25vw, 17px);
+      color: var(--muted);
+    }
+
+    .intro-panel {
+      max-width: 470px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      border-left: 5px solid var(--blue);
+      border-radius: 14px;
+      padding: 9px 12px;
+      font-size: clamp(11px, 1vw, 14px);
+      line-height: 1.25;
+      color: var(--text);
+    }
+
+    .main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1.08fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .panel,
+    .card-stack-panel,
+    .drop-zone,
+    .mini-check,
+    .wrap-up {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    }
+
+    .card-stack-panel,
+    .drop-zone {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-heading h2,
+    .drop-zone h2,
+    .mini-check h2,
+    .wrap-up h2 {
+      margin: 0;
+      font-size: clamp(15px, 1.35vw, 20px);
+      line-height: 1.1;
+    }
+
+    .progress-pill {
+      white-space: nowrap;
+      color: var(--blue);
+      background: var(--blue-soft);
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: clamp(11px, 1vw, 13px);
+      font-weight: 700;
+    }
+
+    .card-stack,
+    .dropped-cards {
+      min-height: 0;
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scrollbar-width: thin;
+    }
+
+    .drop-zone {
+      position: relative;
+      outline: 2px solid transparent;
+      transition: outline-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .drop-zone-header {
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--border);
+      min-height: 82px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: clamp(12px, 1vw, 14px);
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+    }
+
+    .drop-zone.positive .drop-zone-header {
+      border-top: 5px solid var(--amber);
+    }
+
+    .drop-zone.negative .drop-zone-header {
+      border-top: 5px solid var(--teal);
+    }
+
+    .zone-icon {
+      position: absolute;
+      right: 12px;
+      top: 8px;
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      font-size: 26px;
+      font-weight: 800;
+      opacity: 0.95;
+    }
+
+    .positive .zone-icon {
+      color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .negative .zone-icon {
+      color: var(--teal);
+      background: #ccfbf1;
+    }
+
+    .drop-zone.drag-over,
+    .drop-zone.selected-target {
+      outline-color: var(--blue);
+      background: #f0f7ff;
+      transform: translateY(-1px);
+    }
+
+    .empty-zone-message {
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      font-size: clamp(12px, 1vw, 14px);
+      line-height: 1.25;
+      background: #fbfdff;
+    }
+
+    .scenario-card {
+      border: 2px solid var(--border);
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 9px 10px;
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+      min-height: 74px;
+      position: relative;
+      touch-action: manipulation;
+    }
+
+    .scenario-card:hover {
+      border-color: #b8c7dd;
+      box-shadow: 0 5px 14px rgba(15, 23, 42, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .scenario-card:active {
+      cursor: grabbing;
+    }
+
+    .scenario-card.selected {
+      border-color: var(--blue);
+      background: #eff6ff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .scenario-card.correct {
+      cursor: default;
+      border-color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .scenario-card.locked {
+      pointer-events: none;
+    }
+
+    .scenario-card.incorrect {
+      border-color: var(--red);
+      background: var(--red-soft);
+      animation: shake 0.34s ease-in-out;
+    }
+
+    .scenario-title {
+      font-weight: 800;
+      font-size: clamp(13px, 1.05vw, 16px);
+      line-height: 1.15;
+      margin-bottom: 3px;
+      padding-right: 22px;
+    }
+
+    .scenario-text {
+      font-size: clamp(11px, 0.95vw, 14px);
+      color: #334155;
+      line-height: 1.25;
+    }
+
+    .checkmark {
+      position: absolute;
+      top: 7px;
+      right: 8px;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: var(--green);
+      color: white;
+      display: none;
+      place-items: center;
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .scenario-card.correct .checkmark {
+      display: grid;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+
+    .feedback-bar {
+      min-height: 38px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      font-size: clamp(12px, 1.05vw, 15px);
+      line-height: 1.25;
+      color: #334155;
+    }
+
+    .feedback-bar.correct {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: #14532d;
+    }
+
+    .feedback-bar.incorrect {
+      border-color: #fecaca;
+      background: #fff1f2;
+      color: #7f1d1d;
+    }
+
+    .feedback-bar.complete {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+      color: #1e3a8a;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-height: 42px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .controls button,
+    .mini-check button,
+    .wrap-up button,
+    .debug-toggle {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 13px;
+      font-size: clamp(12px, 1vw, 14px);
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+    }
+
+    .controls button:hover,
+    .mini-check button:hover,
+    .wrap-up button:hover,
+    .debug-toggle:hover {
+      transform: translateY(-1px);
+      border-color: #b8c7dd;
+      background: #f8fafc;
+    }
+
+    .controls .primary,
+    .wrap-up .primary {
+      color: #ffffff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .controls .primary:hover,
+    .wrap-up .primary:hover {
+      background: #1d4ed8;
+    }
+
+    .status-note {
+      color: var(--muted);
+      font-size: clamp(11px, 0.9vw, 13px);
+    }
+
+    .mini-check {
+      padding: 10px 12px;
+      max-height: 185px;
+      overflow-y: auto;
+    }
+
+    .mini-check-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .mini-check-header p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: clamp(11px, 0.95vw, 13px);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .mini-question {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 9px;
+      background: #fbfdff;
+    }
+
+    .mini-question h3 {
+      margin: 0 0 8px;
+      font-size: clamp(12px, 1vw, 15px);
+      line-height: 1.25;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .mini-check .choice {
+      border-radius: 10px;
+      padding: 7px 8px;
+      font-size: clamp(11px, 0.92vw, 13px);
+      text-align: left;
+      font-weight: 700;
+    }
+
+    .choice.correct-choice {
+      border-color: var(--green);
+      background: var(--green-soft);
+      color: #14532d;
+    }
+
+    .choice.wrong-choice {
+      border-color: var(--red);
+      background: var(--red-soft);
+      color: #7f1d1d;
+    }
+
+    .mini-feedback {
+      min-height: 18px;
+      margin-top: 7px;
+      font-size: clamp(11px, 0.9vw, 13px);
+      line-height: 1.2;
+      color: var(--muted);
+    }
+
+    .wrap-up {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    .wrap-up-card {
+      align-self: stretch;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      padding: 24px;
+      text-align: center;
+      min-height: 0;
+    }
+
+    .note-content {
+      max-width: 780px;
+    }
+
+    .note-content h3 {
+      margin: 0 0 10px;
+      color: var(--blue);
+      font-size: clamp(24px, 3vw, 42px);
+      letter-spacing: -0.03em;
+      line-height: 1.06;
+    }
+
+    .note-content p {
+      margin: 0;
+      color: #334155;
+      font-size: clamp(18px, 2vw, 27px);
+      line-height: 1.35;
+    }
+
+    .wrap-up-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 12px;
+    }
+
+    .note-counter {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: clamp(12px, 1vw, 15px);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .debug-panel {
+      position: absolute;
+      right: 12px;
+      bottom: 58px;
+      width: min(420px, calc(100% - 24px));
+      max-height: 45%;
+      overflow: auto;
+      background: rgba(15, 23, 42, 0.96);
+      color: #e2e8f0;
+      border-radius: 14px;
+      padding: 10px;
+      z-index: 10;
+      font-size: 11px;
+      box-shadow: var(--shadow);
+    }
+
+    .debug-panel pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 8px 0 0;
+    }
+
+    .debug-toggle {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 11;
+      color: #ffffff;
+      background: #0f172a;
+      border-color: #334155;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        align-items: flex-start;
+        padding: 0;
+        background: var(--bg);
+      }
+
+      .slide-stage {
+        width: 100vw;
+        min-height: 100vh;
+        max-height: none;
+        aspect-ratio: auto;
+        border-radius: 0;
+        padding: 10px;
+        overflow-y: auto;
+        grid-template-rows: auto auto auto auto auto;
+      }
+
+      .header {
+        grid-template-columns: 1fr;
+      }
+
+      .intro-panel {
+        max-width: none;
+      }
+
+      .main,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .drop-zone {
+        min-height: 210px;
+      }
+
+      .card-stack-panel {
+        min-height: 260px;
+      }
+
+      .mini-check {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-stage" id="slideStage">
+    <header class="header">
+      <div>
+        <h1>Hormone Regulation: Feedback Loops</h1>
+        <p>Drag each scenario into the correct feedback type.</p>
+      </div>
+      <div class="intro-panel" aria-label="Student instructions">
+        <strong>Instructions:</strong> Sort each scenario into the correct category. Positive feedback amplifies a change. Negative feedback stabilizes the body and helps restore homeostasis. Drag each card into the best category. Correct answers lock in place.
+      </div>
+    </header>
+
+    <main class="main" id="activityMode">
+      <section class="card-stack-panel" aria-label="Scenario card stack">
+        <div class="panel-heading">
+          <h2>Scenario Cards</h2>
+          <div id="progressText" class="progress-pill">0 / 6 correct</div>
+        </div>
+        <div id="cardStack" class="card-stack" aria-live="polite"></div>
+      </section>
+
+      <section class="drop-zone positive" data-zone="positive" aria-label="Positive feedback drop zone">
+        <div class="drop-zone-header">
+          <h2>Positive Feedback</h2>
+          <p>Amplifies a change</p>
+          <div class="zone-icon" aria-hidden="true">⟳</div>
+        </div>
+        <div class="dropped-cards" id="positiveCards">
+          <div class="empty-zone-message">Drop or click selected cards here if the response makes the process stronger.</div>
+        </div>
+      </section>
+
+      <section class="drop-zone negative" data-zone="negative" aria-label="Negative feedback drop zone">
+        <div class="drop-zone-header">
+          <h2>Negative Feedback</h2>
+          <p>Stabilizes / restores homeostasis</p>
+          <div class="zone-icon" aria-hidden="true">↔</div>
+        </div>
+        <div class="dropped-cards" id="negativeCards">
+          <div class="empty-zone-message">Drop or click selected cards here if the response brings the body back toward normal.</div>
+        </div>
+      </section>
+    </main>
+
+    <section class="feedback-bar" id="feedbackBar" aria-live="polite">
+      Drag a scenario into a category to check your thinking.
+    </section>
+
+    <section class="mini-check hidden" id="miniCheck" aria-label="Hormone imbalance mini-check">
+      <div class="mini-check-header">
+        <div>
+          <h2>Hormone Imbalance Check</h2>
+          <p>Answer both questions correctly to unlock the wrap-up.</p>
+        </div>
+        <div id="miniStatus" class="progress-pill">0 / 2 correct</div>
+      </div>
+      <div class="mini-grid" id="miniGrid"></div>
+    </section>
+
+    <section class="wrap-up hidden" id="wrapUp" aria-label="Wrap-up study notes">
+      <div>
+        <h2>Wrap Up</h2>
+      </div>
+      <div class="wrap-up-card">
+        <div class="note-content" id="noteContent"></div>
+      </div>
+      <div class="wrap-up-footer">
+        <div class="button-row">
+          <button id="noteBackBtn" type="button">Back</button>
+          <button id="noteNextBtn" type="button" class="primary">Next</button>
+        </div>
+        <div id="noteCounter" class="note-counter">Note 1 of 9</div>
+        <div class="button-row">
+          <button id="returnBtn" type="button">Return to Activity</button>
+          <button id="resetFromWrapBtn" type="button">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="controls" id="controls">
+      <div class="button-row">
+        <button id="shuffleBtn" type="button">Shuffle Cards</button>
+        <button id="answerKeyBtn" type="button">Show Answer Key</button>
+        <button id="resetBtn" type="button">Reset</button>
+        <button id="wrapUpBtn" type="button" class="primary hidden">Wrap Up</button>
+      </div>
+      <div class="status-note" id="footerStatus">Tip: You can drag cards, or click a card and then click a category.</div>
+    </footer>
+
+    <button id="debugToggle" class="debug-toggle hidden" type="button">Debug</button>
+    <aside id="debugPanel" class="debug-panel hidden" aria-label="Debug panel">
+      <strong>Debug mode</strong>
+      <pre id="debugOutput"></pre>
+    </aside>
+  </div>
+
+  <script>
+    const feedbackScenarios = [
+      {
+        id: "insulin",
+        title: "After a meal",
+        text: "Blood glucose rises. Insulin is released and blood glucose decreases toward normal.",
+        answer: "negative",
+        explanation: "Negative feedback reverses the original change. Blood glucose was high, and insulin helps bring it back down."
+      },
+      {
+        id: "glucagon",
+        title: "Between meals",
+        text: "Blood glucose drops. Glucagon is released and blood glucose rises toward normal.",
+        answer: "negative",
+        explanation: "Negative feedback helps restore homeostasis. Glucagon raises blood glucose when it becomes too low."
+      },
+      {
+        id: "parturition",
+        title: "Childbirth",
+        text: "Uterine contractions stimulate oxytocin release. Oxytocin causes stronger contractions, leading to more oxytocin.",
+        answer: "positive",
+        explanation: "Positive feedback amplifies the process. More contractions lead to more oxytocin, which causes even stronger contractions."
+      },
+      {
+        id: "ovulation",
+        title: "Ovulation",
+        text: "Rising estrogen stimulates a surge of LH, helping trigger ovulation.",
+        answer: "positive",
+        explanation: "This is positive feedback because rising estrogen stimulates more hormone release instead of suppressing it."
+      },
+      {
+        id: "target-gland-feedback",
+        title: "Target gland hormone",
+        text: "A target gland hormone increases, then inhibits the hypothalamus and anterior pituitary from releasing more hormones.",
+        answer: "negative",
+        explanation: "This is negative feedback. The final hormone reduces earlier hormone release to prevent overproduction."
+      },
+      {
+        id: "thyroid-example",
+        title: "Thyroid regulation",
+        text: "When thyroid hormone levels become high enough, they reduce signals from the pituitary and hypothalamus.",
+        answer: "negative",
+        explanation: "Negative feedback prevents hormone levels from continuing to rise too far."
+      }
+    ];
+
+    const miniQuestions = [
+      {
+        id: "hypo",
+        prompt: "A gland secretes too little hormone. What is this called?",
+        choices: ["Hyposecretion", "Hypersecretion", "Positive feedback", "Antagonistic hormone action"],
+        answer: "Hyposecretion",
+        correctFeedback: "Correct. Hypo- means under or too little.",
+        incorrectFeedback: "Try again. Look for the prefix that means under or too little."
+      },
+      {
+        id: "hyper",
+        prompt: "A gland secretes too much hormone. What is this called?",
+        choices: ["Hyposecretion", "Hypersecretion", "Negative feedback", "Homeostasis"],
+        answer: "Hypersecretion",
+        correctFeedback: "Correct. Hyper- means over or too much.",
+        incorrectFeedback: "Try again. Look for the prefix that means over or too much."
+      }
+    ];
+
+    const studyNotes = [
+      {
+        title: "Positive feedback",
+        text: "Positive feedback <strong>amplifies</strong> a change. The response causes more of the same process to happen."
+      },
+      {
+        title: "Negative feedback",
+        text: "Negative feedback <strong>stabilizes</strong> the body. The response reverses a change and helps restore homeostasis."
+      },
+      {
+        title: "Most hormones use negative feedback",
+        text: "Most hormone systems use negative feedback because hormone levels need to stay within a healthy range."
+      },
+      {
+        title: "Childbirth example",
+        text: "During parturition, oxytocin causes contractions, and contractions stimulate more oxytocin. This is positive feedback."
+      },
+      {
+        title: "Ovulation example",
+        text: "Before ovulation, rising estrogen stimulates an LH surge. This is another positive feedback example."
+      },
+      {
+        title: "Insulin and glucagon",
+        text: "Insulin lowers blood glucose, while glucagon raises blood glucose. They are antagonistic hormones because they work in opposite directions."
+      },
+      {
+        title: "Hyposecretion",
+        text: "Hyposecretion means <strong>under-secretion</strong>: too little hormone is produced."
+      },
+      {
+        title: "Hypersecretion",
+        text: "Hypersecretion means <strong>over-secretion</strong>: too much hormone is produced."
+      },
+      {
+        title: "Memory hook",
+        text: "Positive feedback pushes a process forward. Negative feedback brings the body back toward normal."
+      }
+    ];
+
+    const state = {
+      cardOrder: [],
+      placed: {},
+      attempts: {},
+      selectedCardId: null,
+      miniComplete: {},
+      answerKeyUsed: false,
+      currentNoteIndex: 0
+    };
+
+    const elements = {
+      cardStack: document.getElementById("cardStack"),
+      positiveCards: document.getElementById("positiveCards"),
+      negativeCards: document.getElementById("negativeCards"),
+      progressText: document.getElementById("progressText"),
+      feedbackBar: document.getElementById("feedbackBar"),
+      shuffleBtn: document.getElementById("shuffleBtn"),
+      answerKeyBtn: document.getElementById("answerKeyBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      wrapUpBtn: document.getElementById("wrapUpBtn"),
+      miniCheck: document.getElementById("miniCheck"),
+      miniGrid: document.getElementById("miniGrid"),
+      miniStatus: document.getElementById("miniStatus"),
+      activityMode: document.getElementById("activityMode"),
+      wrapUp: document.getElementById("wrapUp"),
+      controls: document.getElementById("controls"),
+      noteContent: document.getElementById("noteContent"),
+      noteBackBtn: document.getElementById("noteBackBtn"),
+      noteNextBtn: document.getElementById("noteNextBtn"),
+      noteCounter: document.getElementById("noteCounter"),
+      returnBtn: document.getElementById("returnBtn"),
+      resetFromWrapBtn: document.getElementById("resetFromWrapBtn"),
+      footerStatus: document.getElementById("footerStatus"),
+      debugToggle: document.getElementById("debugToggle"),
+      debugPanel: document.getElementById("debugPanel"),
+      debugOutput: document.getElementById("debugOutput")
+    };
+
+    function initActivity() {
+      state.cardOrder = shuffleArray(feedbackScenarios.map(card => card.id));
+      state.placed = {};
+      state.attempts = {};
+      state.selectedCardId = null;
+      state.miniComplete = {};
+      state.answerKeyUsed = false;
+      state.currentNoteIndex = 0;
+
+      feedbackScenarios.forEach(card => {
+        state.placed[card.id] = null;
+        state.attempts[card.id] = 0;
+      });
+
+      miniQuestions.forEach(question => {
+        state.miniComplete[question.id] = false;
+      });
+
+      elements.activityMode.classList.remove("hidden");
+      elements.feedbackBar.className = "feedback-bar";
+      elements.feedbackBar.textContent = "Drag a scenario into a category to check your thinking.";
+      elements.miniCheck.classList.add("hidden");
+      elements.wrapUp.classList.add("hidden");
+      elements.controls.classList.remove("hidden");
+      elements.wrapUpBtn.classList.add("hidden");
+      elements.footerStatus.textContent = "Tip: You can drag cards, or click a card and then click a category.";
+
+      renderCards();
+      renderMiniCheck();
+      updateProgress();
+      setupDebugMode();
+    }
+
+    function renderCards() {
+      clearCardContainers();
+
+      state.cardOrder.forEach(cardId => {
+        if (!state.placed[cardId]) {
+          elements.cardStack.appendChild(createCardElement(cardId));
+        }
+      });
+
+      feedbackScenarios.forEach(card => {
+        const zone = state.placed[card.id];
+        if (zone) {
+          const container = zone === "positive" ? elements.positiveCards : elements.negativeCards;
+          container.appendChild(createCardElement(card.id, true));
+        }
+      });
+
+      addEmptyZoneMessages();
+      updateSelectedVisuals();
+      updateDebug();
+    }
+
+    function createCardElement(cardId, locked = false) {
+      const card = getCard(cardId);
+      const cardElement = document.createElement("article");
+      cardElement.className = "scenario-card";
+      cardElement.id = `card-${card.id}`;
+      cardElement.dataset.cardId = card.id;
+      cardElement.draggable = !locked;
+      cardElement.setAttribute("role", "button");
+      cardElement.setAttribute("tabindex", locked ? "-1" : "0");
+      cardElement.setAttribute("aria-label", `${card.title}. ${card.text}`);
+
+      if (locked) {
+        cardElement.classList.add("correct", "locked");
+      }
+
+      cardElement.innerHTML = `
+        <div class="checkmark" aria-hidden="true">✓</div>
+        <div class="scenario-title">${escapeHtml(card.title)}</div>
+        <div class="scenario-text">${escapeHtml(card.text)}</div>
+      `;
+
+      if (!locked) {
+        cardElement.addEventListener("dragstart", handleDragStart);
+        cardElement.addEventListener("click", () => selectCard(card.id));
+        cardElement.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            selectCard(card.id);
+          }
+        });
+      }
+
+      return cardElement;
+    }
+
+    function clearCardContainers() {
+      elements.cardStack.innerHTML = "";
+      elements.positiveCards.innerHTML = "";
+      elements.negativeCards.innerHTML = "";
+    }
+
+    function addEmptyZoneMessages() {
+      if (!elements.positiveCards.querySelector(".scenario-card")) {
+        elements.positiveCards.innerHTML = `<div class="empty-zone-message">Drop or click selected cards here if the response makes the process stronger.</div>`;
+      }
+      if (!elements.negativeCards.querySelector(".scenario-card")) {
+        elements.negativeCards.innerHTML = `<div class="empty-zone-message">Drop or click selected cards here if the response brings the body back toward normal.</div>`;
+      }
+      if (!elements.cardStack.querySelector(".scenario-card")) {
+        elements.cardStack.innerHTML = `<div class="empty-zone-message">All cards have been sorted. Complete the next step below.</div>`;
+      }
+    }
+
+    function shuffleUnsortedCards() {
+      const unsortedIds = state.cardOrder.filter(cardId => !state.placed[cardId]);
+      const sortedIds = state.cardOrder.filter(cardId => state.placed[cardId]);
+      state.cardOrder = [...shuffleArray(unsortedIds), ...sortedIds];
+      state.selectedCardId = null;
+      setFeedback("Unsorted cards shuffled. Correctly placed cards stayed locked in place.", "complete");
+      renderCards();
+    }
+
+    function handleDragStart(event) {
+      const cardId = event.currentTarget.dataset.cardId;
+      event.dataTransfer.setData("text/plain", cardId);
+      event.dataTransfer.effectAllowed = "move";
+      state.selectedCardId = cardId;
+      updateSelectedVisuals();
+    }
+
+    function handleDrop(event, zone) {
+      event.preventDefault();
+      const draggedCardId = event.dataTransfer.getData("text/plain") || state.selectedCardId;
+      document.querySelectorAll(".drop-zone").forEach(zoneElement => zoneElement.classList.remove("drag-over"));
+
+      if (!draggedCardId || state.placed[draggedCardId]) {
+        return;
+      }
+
+      checkAnswer(draggedCardId, zone);
+    }
+
+    function checkAnswer(cardId, zone) {
+      const card = getCard(cardId);
+      if (!card || state.placed[cardId]) {
+        return;
+      }
+
+      if (card.answer === zone) {
+        markCorrect(cardId, zone);
+      } else {
+        handleIncorrect(cardId, zone);
+      }
+    }
+
+    function markCorrect(cardId, zone) {
+      const card = getCard(cardId);
+      state.placed[cardId] = zone;
+      state.selectedCardId = null;
+
+      setFeedback(`Correct. ${card.explanation}`, "correct");
+      renderCards();
+      updateProgress();
+
+      if (getCorrectCount() === feedbackScenarios.length) {
+        showMiniCheck();
+      }
+    }
+
+    function handleIncorrect(cardId, zone) {
+      const card = getCard(cardId);
+      state.attempts[cardId] += 1;
+      state.selectedCardId = null;
+
+      const cardElement = document.getElementById(`card-${cardId}`);
+      if (cardElement) {
+        cardElement.classList.remove("incorrect");
+        void cardElement.offsetWidth;
+        cardElement.classList.add("incorrect");
+        setTimeout(() => {
+          const refreshed = document.getElementById(`card-${cardId}`);
+          if (refreshed) refreshed.classList.remove("incorrect");
+        }, 380);
+      }
+
+      if (state.attempts[cardId] >= 2) {
+        const correctType = card.answer === "positive" ? "positive feedback" : "negative feedback";
+        setFeedback(`Try again. This one is ${correctType} because ${card.explanation.replace(/^This is positive feedback because /, "").replace(/^This is negative feedback\. /, "").replace(/^Negative feedback /, "it ").replace(/^Positive feedback /, "it ")}`, "incorrect");
+      } else {
+        setFeedback("Try again. Ask yourself: does the response amplify the original change, or reverse it to bring the body back toward normal?", "incorrect");
+      }
+
+      renderCards();
+      updateDebug();
+    }
+
+    function updateProgress() {
+      const correctCount = getCorrectCount();
+      elements.progressText.textContent = `${correctCount} / ${feedbackScenarios.length} correct`;
+      updateDebug();
+    }
+
+    function showAnswerKey() {
+      feedbackScenarios.forEach(card => {
+        state.placed[card.id] = card.answer;
+      });
+      state.selectedCardId = null;
+      state.answerKeyUsed = true;
+      renderCards();
+      updateProgress();
+      setFeedback("Answer key shown. Review the categories, then open the Wrap Up.", "complete");
+      showMiniCheck(true);
+      elements.wrapUpBtn.classList.remove("hidden");
+      elements.footerStatus.textContent = "Answer key used. You can review the sorted cards, complete the check, or open the wrap-up.";
+    }
+
+    function resetActivity() {
+      initActivity();
+    }
+
+    function showMiniCheck(fromAnswerKey = false) {
+      elements.miniCheck.classList.remove("hidden");
+
+      if (fromAnswerKey) {
+        state.miniComplete.hypo = true;
+        state.miniComplete.hyper = true;
+        renderMiniCheck();
+        updateMiniStatus();
+      } else {
+        setFeedback("Great work. You sorted the feedback examples. Now complete two quick hormone-imbalance checks.", "complete");
+      }
+
+      updateDebug();
+    }
+
+    function renderMiniCheck() {
+      elements.miniGrid.innerHTML = "";
+
+      miniQuestions.forEach((question, index) => {
+        const questionCard = document.createElement("article");
+        questionCard.className = "mini-question";
+        questionCard.id = `mini-${question.id}`;
+
+        const choicesHtml = question.choices.map(choice => {
+          const isLocked = state.miniComplete[question.id];
+          const className = isLocked && choice === question.answer ? "choice correct-choice" : "choice";
+          return `<button type="button" class="${className}" data-question-id="${question.id}" data-choice="${escapeHtml(choice)}" ${isLocked ? "disabled" : ""}>${choice}</button>`;
+        }).join("");
+
+        questionCard.innerHTML = `
+          <h3>${index + 1}. ${escapeHtml(question.prompt)}</h3>
+          <div class="choice-grid">${choicesHtml}</div>
+          <div class="mini-feedback" id="miniFeedback-${question.id}">
+            ${state.miniComplete[question.id] ? question.correctFeedback : "Choose the best answer."}
+          </div>
+        `;
+
+        elements.miniGrid.appendChild(questionCard);
+      });
+
+      elements.miniGrid.querySelectorAll(".choice").forEach(button => {
+        button.addEventListener("click", () => {
+          checkMiniQuestion(button.dataset.questionId, button.dataset.choice, button);
+        });
+      });
+
+      updateMiniStatus();
+    }
+
+    function checkMiniQuestion(questionId, selectedAnswer, buttonElement) {
+      const question = miniQuestions.find(item => item.id === questionId);
+      const feedbackElement = document.getElementById(`miniFeedback-${questionId}`);
+      if (!question || state.miniComplete[questionId]) {
+        return;
+      }
+
+      if (selectedAnswer === question.answer) {
+        state.miniComplete[questionId] = true;
+        feedbackElement.textContent = question.correctFeedback;
+        feedbackElement.style.color = "#14532d";
+        renderMiniCheck();
+      } else {
+        buttonElement.classList.add("wrong-choice");
+        feedbackElement.textContent = question.incorrectFeedback;
+        feedbackElement.style.color = "#7f1d1d";
+      }
+
+      updateMiniStatus();
+
+      if (isMiniComplete()) {
+        setFeedback("You’re ready for the wrap-up.", "complete");
+        elements.wrapUpBtn.classList.remove("hidden");
+        elements.footerStatus.textContent = "Mini-check complete. Open the wrap-up when you are ready.";
+      }
+
+      updateDebug();
+    }
+
+    function updateMiniStatus() {
+      const completeCount = miniQuestions.filter(question => state.miniComplete[question.id]).length;
+      elements.miniStatus.textContent = `${completeCount} / ${miniQuestions.length} correct`;
+    }
+
+    function showWrapUp() {
+      elements.activityMode.classList.add("hidden");
+      elements.feedbackBar.classList.add("hidden");
+      elements.miniCheck.classList.add("hidden");
+      elements.wrapUp.classList.remove("hidden");
+      elements.currentNoteIndex = state.currentNoteIndex;
+      renderStudyNote(state.currentNoteIndex);
+      elements.footerStatus.textContent = "Use Back and Next to review the study notes.";
+      updateDebug();
+    }
+
+    function renderStudyNote(index) {
+      const safeIndex = Math.max(0, Math.min(index, studyNotes.length - 1));
+      state.currentNoteIndex = safeIndex;
+      const note = studyNotes[safeIndex];
+      elements.noteContent.innerHTML = `<h3>${note.title}</h3><p>${note.text}</p>`;
+      elements.noteCounter.textContent = `Note ${safeIndex + 1} of ${studyNotes.length}`;
+      elements.noteBackBtn.disabled = safeIndex === 0;
+      elements.noteNextBtn.textContent = safeIndex === studyNotes.length - 1 ? "Restart Notes" : "Next";
+      updateDebug();
+    }
+
+    function returnToActivity() {
+      elements.wrapUp.classList.add("hidden");
+      elements.activityMode.classList.remove("hidden");
+      elements.feedbackBar.classList.remove("hidden");
+      if (getCorrectCount() === feedbackScenarios.length) {
+        elements.miniCheck.classList.remove("hidden");
+      }
+      setFeedback("Returned to the activity. Review the sorted cards or reset to try again.", "complete");
+    }
+
+    function selectCard(cardId) {
+      if (state.placed[cardId]) {
+        return;
+      }
+      state.selectedCardId = state.selectedCardId === cardId ? null : cardId;
+      updateSelectedVisuals();
+      if (state.selectedCardId) {
+        const card = getCard(cardId);
+        setFeedback(`Selected: ${card.title}. Now click Positive Feedback or Negative Feedback.`, "complete");
+      } else {
+        setFeedback("Selection cleared. Click a card to select it, or drag it into a category.", "");
+      }
+    }
+
+    function updateSelectedVisuals() {
+      document.querySelectorAll(".scenario-card").forEach(cardElement => {
+        cardElement.classList.toggle("selected", cardElement.dataset.cardId === state.selectedCardId);
+      });
+      document.querySelectorAll(".drop-zone").forEach(zoneElement => {
+        zoneElement.classList.toggle("selected-target", Boolean(state.selectedCardId));
+      });
+    }
+
+    function setupDropZones() {
+      document.querySelectorAll(".drop-zone").forEach(zoneElement => {
+        const zone = zoneElement.dataset.zone;
+
+        zoneElement.addEventListener("dragover", event => {
+          event.preventDefault();
+          zoneElement.classList.add("drag-over");
+        });
+
+        zoneElement.addEventListener("dragleave", event => {
+          if (!zoneElement.contains(event.relatedTarget)) {
+            zoneElement.classList.remove("drag-over");
+          }
+        });
+
+        zoneElement.addEventListener("drop", event => handleDrop(event, zone));
+
+        zoneElement.addEventListener("click", event => {
+          if (event.target.closest(".scenario-card")) {
+            return;
+          }
+          if (state.selectedCardId) {
+            checkAnswer(state.selectedCardId, zone);
+          }
+        });
+      });
+    }
+
+    function setFeedback(message, type) {
+      elements.feedbackBar.className = "feedback-bar";
+      if (type) {
+        elements.feedbackBar.classList.add(type);
+      }
+      elements.feedbackBar.textContent = message;
+    }
+
+    function getCorrectCount() {
+      return feedbackScenarios.filter(card => state.placed[card.id] === card.answer).length;
+    }
+
+    function isMiniComplete() {
+      return miniQuestions.every(question => state.miniComplete[question.id]);
+    }
+
+    function getCard(cardId) {
+      return feedbackScenarios.find(card => card.id === cardId);
+    }
+
+    function shuffleArray(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function setupDebugMode() {
+      const debugEnabled = new URLSearchParams(window.location.search).get("debug") === "1";
+      if (!debugEnabled) {
+        elements.debugToggle.classList.add("hidden");
+        elements.debugPanel.classList.add("hidden");
+        return;
+      }
+
+      elements.debugToggle.classList.remove("hidden");
+      updateDebug();
+    }
+
+    function updateDebug() {
+      if (elements.debugToggle.classList.contains("hidden")) {
+        return;
+      }
+
+      const debugState = {
+        cardState: state.placed,
+        cardOrder: state.cardOrder,
+        correctCount: getCorrectCount(),
+        incorrectAttemptCounts: state.attempts,
+        miniCheckComplete: isMiniComplete(),
+        miniCheckState: state.miniComplete,
+        answerKeyUsed: state.answerKeyUsed,
+        selectedCardId: state.selectedCardId,
+        currentNoteIndex: state.currentNoteIndex
+      };
+
+      elements.debugOutput.textContent = JSON.stringify(debugState, null, 2);
+    }
+
+    elements.shuffleBtn.addEventListener("click", shuffleUnsortedCards);
+    elements.answerKeyBtn.addEventListener("click", showAnswerKey);
+    elements.resetBtn.addEventListener("click", resetActivity);
+    elements.resetFromWrapBtn.addEventListener("click", resetActivity);
+    elements.wrapUpBtn.addEventListener("click", showWrapUp);
+    elements.returnBtn.addEventListener("click", returnToActivity);
+
+    elements.noteBackBtn.addEventListener("click", () => {
+      renderStudyNote(state.currentNoteIndex - 1);
+    });
+
+    elements.noteNextBtn.addEventListener("click", () => {
+      if (state.currentNoteIndex === studyNotes.length - 1) {
+        renderStudyNote(0);
+      } else {
+        renderStudyNote(state.currentNoteIndex + 1);
+      }
+    });
+
+    elements.debugToggle.addEventListener("click", () => {
+      elements.debugPanel.classList.toggle("hidden");
+      updateDebug();
+    });
+
+    setupDropZones();
+    initActivity();
+  </script>
+</body>
+</html>

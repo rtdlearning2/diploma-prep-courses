@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inner Ear Balance Drag-and-Drop</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --text: #111827;
+      --label-text: #374151;
+      --muted: #4b5563;
+      --border: #d1d5db;
+      --panel: #ffffff;
+      --bg: #f8fafc;
+      --line: #64748b;
+      --shadow: 0 8px 18px rgba(15, 23, 42, 0.09);
+      --hotspot-size: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      background: #eef2f7;
+      color: var(--text);
+    }
+
+    .slide-stage {
+      width: 100vw;
+      height: 100vh;
+      aspect-ratio: 16 / 9;
+      max-width: calc(100vh * 16 / 9);
+      max-height: calc(100vw * 9 / 16);
+      margin: auto;
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 66px 1fr;
+    }
+
+    header {
+      padding: 8px 24px 6px;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      font-weight: 800;
+    }
+
+    .instructions {
+      margin: 5px 0 0;
+      font-size: 13.5px;
+      color: #243244;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .main {
+      min-height: 0;
+      padding: 8px 12px 10px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 12px;
+    }
+
+    .diagram-card,
+    .activity-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      min-height: 0;
+    }
+
+    .diagram-card {
+      border-radius: 14px;
+      padding: 8px;
+      display: flex;
+    }
+
+    .image-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      border: 1px solid #eef2f7;
+      background: #ffffff;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .image-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2048 / 1365;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .image-canvas img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .leader-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .leader-line {
+      stroke: var(--line);
+      stroke-width: 1.1;
+      vector-effect: non-scaling-stroke;
+      stroke-linecap: round;
+      opacity: 0.74;
+      transition: stroke 0.18s ease, opacity 0.18s ease, stroke-width 0.18s ease;
+    }
+
+    .target-dot {
+      fill: #ffffff;
+      stroke: var(--line);
+      stroke-width: 0.85;
+      vector-effect: non-scaling-stroke;
+      opacity: 0.96;
+      transition: fill 0.18s ease, stroke 0.18s ease, r 0.18s ease;
+    }
+
+    .leader-line.correct {
+      stroke: var(--green);
+      stroke-width: 1.3;
+      opacity: 1;
+    }
+
+    .target-dot.correct {
+      fill: var(--green-soft);
+      stroke: var(--green);
+    }
+    .leader-line.hidden, .target-dot.hidden { opacity: 0.08; }
+
+    .diagram-number.hidden { opacity: 0.08; }
+
+    .diagram-number {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      transform: translate(-50%, -50%);
+      width: var(--hotspot-size);
+      height: var(--hotspot-size);
+      border: 2.5px solid #ffffff;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.94);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.24);
+      z-index: 3;
+      transition: opacity 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+
+    .diagram-number.correct {
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(22,163,74,0.16), 0 3px 8px rgba(0,0,0,0.24);
+    }
+
+    .diagram-number.pop { animation: markerPop 0.36s ease-out; }
+    @keyframes markerPop {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.16); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .activity-card {
+      border-radius: 0;
+      padding: 11px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .activity-card.wrapup-mode {
+      grid-template-rows: 1fr;
+      background: #ffffff;
+      border-color: var(--border);
+      animation: panelSwap 0.45s ease-out both;
+    }
+    @keyframes panelSwap {
+      0% { opacity: 0.2; transform: translateX(10px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+
+    .score {
+      font-weight: 800;
+      font-size: 19px;
+      letter-spacing: -0.02em;
+      margin-bottom: 0;
+    }
+
+    .status { display: none; }
+
+    .match-area {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 9px;
+      overflow: hidden;
+    }
+
+    .column {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      overflow: hidden;
+    }
+
+    .column-title {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #374151;
+      margin-bottom: 0;
+      line-height: 1.1;
+    }
+
+    .labels,
+    .slots {
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      align-content: start;
+      gap: 5px;
+      padding-right: 0;
+    }
+
+    .label-chip {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 9px;
+      padding: 5px 7px;
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      line-height: 1.08;
+      font-weight: 680;
+      color: var(--label-text);
+      cursor: grab;
+      user-select: none;
+      box-shadow: 0 1px 4px rgba(15,23,42,0.08);
+      transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+      touch-action: none;
+    }
+
+    .label-chip:hover,
+    .label-chip:focus-visible {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      outline: none;
+    }
+
+    .label-chip.dragging { opacity: 0.45; cursor: grabbing; }
+
+    .slot-row {
+      display: grid;
+      grid-template-columns: 25px 1fr;
+      gap: 5px;
+      align-items: center;
+      min-height: 30px;
+    }
+
+    .slot-number {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 900;
+      justify-self: center;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+      transition: background 0.18s ease;
+    }
+
+    .slot-number.correct { background: var(--green); }
+
+    .drop-slot {
+      min-height: 30px;
+      border: 2px solid #cbd5e1;
+      border-radius: 9px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      padding: 5px 6px;
+      font-size: 9px;
+      font-weight: 500;
+      color: #9ca3af;
+      line-height: 1.1;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .drop-slot::before { content: "Drop label here"; }
+    .drop-slot.drag-over { background: var(--blue-soft); border-color: var(--blue); transform: scale(1.015); }
+    .drop-slot.correct {
+      background: var(--green-soft);
+      border-color: #22c55e;
+      color: #166534;
+      font-size: 11px;
+      font-weight: 750;
+      animation: answerSettle 0.34s ease-out both;
+    }
+    .drop-slot.correct::before { content: ""; }
+
+    @keyframes answerSettle {
+      0% { opacity: 0.45; transform: translateY(-3px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .drop-slot.incorrect { background: var(--red-soft); border-color: var(--red); animation: shake 0.25s ease-in-out; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    .placed-text::after { content: " ✓"; font-weight: 900; }
+
+    .bottom-area { display: grid; gap: 6px; }
+
+    .completion-prompt {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      padding: 0 0 3px;
+      margin-top: -8px;
+      animation: wrapupIn 0.35s ease-out both;
+    }
+    .completion-prompt.show { display: flex; }
+    .completion-prompt span { font-size: 15px; color: #111827; font-weight: 600; }
+
+    .bottom-controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: start; }
+
+    .utility-button {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 7px 9px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 11.5px;
+      font-family: inherit;
+    }
+    .utility-button:hover,
+    .utility-button:focus-visible { border-color: var(--blue); color: var(--blue-dark); outline: none; }
+    .utility-button:disabled { opacity: 0.62; cursor: default; }
+
+    .wrapup-panel { display: none; height: 100%; min-height: 0; }
+
+    .wrapup-start-button {
+      border: 1px solid #15803d;
+      background: #16a34a;
+      color: #ffffff;
+      border-radius: 999px;
+      padding: 11px 22px;
+      font-weight: 850;
+      font-size: 16px;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.25);
+      line-height: 1;
+      min-width: 108px;
+    }
+    .wrapup-start-button:hover,
+    .wrapup-start-button:focus-visible { background: #15803d; outline: none; }
+
+    .wrapup-mode.notes-mode .wrapup-panel {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 10px;
+      padding: 5px 3px;
+      animation: wrapupIn 0.55s ease-out both;
+    }
+    .wrapup-mode.notes-mode .activity-content { display: none; }
+    @keyframes wrapupIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .notes-card {
+      border: 1px solid #bbd7ad;
+      background: #eef8e9;
+      border-radius: 16px;
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 11px;
+      min-height: 0;
+    }
+    .notes-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .notes-title { font-weight: 850; color: #1f2937; font-size: 20px; letter-spacing: -0.025em; }
+    .notes-count { color: #4b5563; font-weight: 750; font-size: 13px; white-space: nowrap; }
+    .note-text { font-size: 18px; line-height: 1.32; color: #111827; align-self: center; transition: opacity 0.22s ease, transform 0.22s ease; }
+    .note-text.fade-out { opacity: 0; transform: translateY(5px); }
+    .note-text.fade-in { animation: noteFadeIn 0.35s ease-out both; }
+    @keyframes noteFadeIn { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
+    .note-text strong { font-weight: 850; }
+
+    .notes-nav { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .note-button {
+      border: 1px solid #a7c99c;
+      background: #ffffff;
+      color: #1f2937;
+      border-radius: 999px;
+      padding: 8px 13px;
+      font-weight: 850;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .note-button:hover,
+    .note-button:focus-visible { border-color: var(--green); color: #166534; outline: none; }
+    .note-button:disabled { opacity: 0.45; cursor: default; }
+    .note-dots { display: flex; gap: 6px; align-items: center; justify-content: center; flex: 1; }
+    .note-dot { width: 8px; height: 8px; border-radius: 50%; background: #b7cbb0; }
+    .note-dot.active { width: 24px; border-radius: 999px; background: var(--green); }
+    .wrapup-controls { display: flex; justify-content: flex-end; gap: 10px; }
+
+    @media (max-width: 1050px) {
+      .main { grid-template-columns: minmax(0, 1fr) 400px; gap: 11px; }
+      h1 { font-size: 23px; }
+      .instructions { font-size: 13px; }
+      .label-chip { font-size: 11.5px; min-height: 28px; }
+      .slot-row { min-height: 28px; }
+      .drop-slot { font-size: 8.5px; min-height: 28px; }
+      .drop-slot.correct { font-size: 10.5px; }
+      .note-text { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="slide-stage">
+    <header>
+      <h1>Inner Ear Balance Drag-and-Drop</h1>
+      <p class="instructions">Drag each label into the matching numbered box. Correct answers turn green and lock in place.</p>
+    </header>
+
+    <section class="main" aria-label="Inner ear balance drag-and-drop activity">
+      <div class="diagram-card">
+        <div class="image-stage">
+          <div class="image-canvas" id="imageStage">
+            <img src="ear3_image.png" alt="Unlabelled diagram of the vestibular system and semicircular canals for a drag-and-drop labelling activity." />
+            <svg class="leader-svg" id="leaderSvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+          </div>
+        </div>
+      </div>
+
+      <aside class="activity-card" id="activityCard">
+        <div class="activity-content">
+          <div class="score" id="score">Score: 0/5</div>
+          <div class="status" id="status" aria-live="polite"></div>
+        </div>
+
+        <div class="match-area activity-content">
+          <div class="column">
+            <div class="column-title">Labels</div>
+            <div class="labels" id="labels" aria-label="Draggable inner ear labels"></div>
+          </div>
+
+          <div class="column">
+            <div class="column-title">Matching boxes</div>
+            <div class="slots" id="slots" aria-label="Numbered answer slots"></div>
+          </div>
+        </div>
+
+        <div class="bottom-area activity-content">
+          <div class="completion-prompt" id="completionPrompt">
+            <span>Great work!</span>
+            <button class="wrapup-start-button" id="startWrapupButton" type="button">Wrap Up</button>
+          </div>
+
+          <div class="bottom-controls">
+            <button class="utility-button" id="shuffleButton" type="button">Shuffle labels</button>
+            <button class="utility-button" id="keyButton" type="button">Show answer key</button>
+            <button class="utility-button" id="resetButton" type="button">Reset</button>
+          </div>
+        </div>
+
+        <section class="wrapup-panel" aria-label="Study notes">
+          <div class="notes-card">
+            <div class="notes-top">
+              <div class="notes-title">Study Notes</div>
+              <div class="notes-count" id="notesCount">Note 1 of 6</div>
+            </div>
+            <div class="note-text" id="noteText"></div>
+            <div class="notes-nav">
+              <button class="note-button" id="prevNoteButton" type="button">Back</button>
+              <div class="note-dots" id="noteDots" aria-hidden="true"></div>
+              <button class="note-button" id="nextNoteButton" type="button">Next</button>
+            </div>
+          </div>
+
+          <div class="wrapup-controls">
+            <button class="utility-button" id="wrapupResetButton" type="button">Reset activity</button>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const parts = [
+      // x/y = visible number in open white space.
+      // targets = one or more leader-line target dots on the actual cleaned image.
+      // Multiple targets are useful when one label identifies repeated items, such as debris.
+      { id: 1, name: "Superior semicircular canal", x: "34.7%", y: "25.0%", targets: [{ tx: "45.2%", ty: "30.0%" }] },
+      { id: 2, name: "Posterior semicircular canal", x: "77.5%", y: "24.0%", targets: [{ tx: "57.8%", ty: "27.0%" }] },
+      { id: 3, name: "Horizontal semicircular canal", x: "84.0%", y: "56.0%", targets: [{ tx: "76.2%", ty: "46.3%" }] },
+      { id: 4, name: "Nerve", x: "13.0%", y: "49.0%", targets: [{ tx: "30.2%", ty: "52.9%" }] },
+      { id: 5, name: "Debris", x: "76.0%", y: "66.4%", targets: [
+        { tx: "50.6%", ty: "52.2%" },
+        { tx: "53.8%", ty: "59.4%" }
+      ] }
+    ];
+
+    const studyNotes = [
+      {
+        text: "The <strong>superior semicircular canal (1)</strong> is one of three looped canals that help detect head rotation.",
+        ids: [1]
+      },
+      {
+        text: "The <strong>posterior semicircular canal (2)</strong> is commonly involved in positional vertigo because loose crystals can move into this canal.",
+        ids: [2]
+      },
+      {
+        text: "The <strong>horizontal semicircular canal (3)</strong> helps sense side-to-side rotational movement of the head.",
+        ids: [3]
+      },
+      {
+        text: "The <strong>nerve (4)</strong> carries balance information from the inner ear toward the brain.",
+        ids: [4]
+      },
+      {
+        text: "The <strong>debris (5)</strong> represents loose crystals or particles that can trigger abnormal balance signals when they move through a canal.",
+        ids: [5]
+      },
+      {
+        text: "Memory hook: the <strong>three semicircular canals (1, 2, 3)</strong> are arranged in different planes so the body can sense rotation in different directions.",
+        ids: [1, 2, 3]
+      }
+    ];
+
+    const activityCard = document.getElementById("activityCard");
+    const imageStage = document.getElementById("imageStage");
+    const leaderSvg = document.getElementById("leaderSvg");
+    const labelsContainer = document.getElementById("labels");
+    const slotsContainer = document.getElementById("slots");
+    const scoreElement = document.getElementById("score");
+    const statusElement = document.getElementById("status");
+    const resetButton = document.getElementById("resetButton");
+    const wrapupResetButton = document.getElementById("wrapupResetButton");
+    const startWrapupButton = document.getElementById("startWrapupButton");
+    const completionPrompt = document.getElementById("completionPrompt");
+    const shuffleButton = document.getElementById("shuffleButton");
+    const keyButton = document.getElementById("keyButton");
+    const noteText = document.getElementById("noteText");
+    const notesCount = document.getElementById("notesCount");
+    const prevNoteButton = document.getElementById("prevNoteButton");
+    const nextNoteButton = document.getElementById("nextNoteButton");
+    const noteDots = document.getElementById("noteDots");
+
+    let placed = new Set();
+    let labelOrder = [];
+    let currentNote = 0;
+
+    function percentNumber(value) {
+      return Number(String(value).replace("%", ""));
+    }
+
+    function shuffle(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function setStatus(message, type = "neutral") {
+      if (!statusElement) return;
+      statusElement.innerHTML = message;
+      statusElement.classList.remove("good", "bad");
+      if (type === "good") statusElement.classList.add("good");
+      if (type === "bad") statusElement.classList.add("bad");
+    }
+
+    function updateScore() {
+      scoreElement.textContent = `Score: ${placed.size}/${parts.length}`;
+      if (placed.size === parts.length) showCompletionPrompt();
+    }
+
+    function createLeaderLines() {
+      leaderSvg.innerHTML = "";
+      parts.forEach(part => {
+        const targets = part.targets || [{ tx: part.tx, ty: part.ty }];
+
+        targets.forEach((target, targetIndex) => {
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.classList.add("leader-line");
+          line.dataset.partId = part.id;
+          line.dataset.targetIndex = targetIndex;
+          line.setAttribute("x1", percentNumber(part.x));
+          line.setAttribute("y1", percentNumber(part.y));
+          line.setAttribute("x2", percentNumber(target.tx));
+          line.setAttribute("y2", percentNumber(target.ty));
+
+          const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          dot.classList.add("target-dot");
+          dot.dataset.partId = part.id;
+          dot.dataset.targetIndex = targetIndex;
+          dot.setAttribute("cx", percentNumber(target.tx));
+          dot.setAttribute("cy", percentNumber(target.ty));
+          dot.setAttribute("r", 0.78);
+
+          leaderSvg.appendChild(line);
+          leaderSvg.appendChild(dot);
+        });
+      });
+    }
+
+    function createDiagramNumbers() {
+      imageStage.querySelectorAll(".diagram-number").forEach(number => number.remove());
+      parts.forEach(part => {
+        const marker = document.createElement("div");
+        marker.className = "diagram-number";
+        marker.textContent = part.id;
+        marker.dataset.partId = part.id;
+        marker.style.setProperty("--x", part.x);
+        marker.style.setProperty("--y", part.y);
+        imageStage.appendChild(marker);
+      });
+    }
+
+    function createLabels() {
+      labelsContainer.innerHTML = "";
+      labelOrder
+        .filter(part => !placed.has(part.id))
+        .forEach(part => {
+          const chip = document.createElement("div");
+          chip.className = "label-chip";
+          chip.textContent = part.name;
+          chip.tabIndex = 0;
+          chip.draggable = true;
+          chip.dataset.partId = part.id;
+
+          chip.addEventListener("dragstart", event => {
+            chip.classList.add("dragging");
+            event.dataTransfer.setData("text/plain", String(part.id));
+            event.dataTransfer.effectAllowed = "move";
+          });
+
+          chip.addEventListener("dragend", () => chip.classList.remove("dragging"));
+          labelsContainer.appendChild(chip);
+        });
+    }
+
+    function createSlots() {
+      slotsContainer.innerHTML = "";
+      parts.forEach(part => {
+        const row = document.createElement("div");
+        row.className = "slot-row";
+
+        const number = document.createElement("div");
+        number.className = "slot-number";
+        number.textContent = part.id;
+        number.dataset.partId = part.id;
+
+        const slot = document.createElement("div");
+        slot.className = "drop-slot";
+        slot.dataset.partId = part.id;
+        slot.setAttribute("aria-label", `Drop answer for number ${part.id}`);
+
+        slot.addEventListener("dragover", event => {
+          if (placed.has(part.id)) return;
+          event.preventDefault();
+          slot.classList.add("drag-over");
+        });
+
+        slot.addEventListener("dragleave", () => slot.classList.remove("drag-over"));
+
+        slot.addEventListener("drop", event => {
+          event.preventDefault();
+          slot.classList.remove("drag-over");
+          if (placed.has(part.id)) return;
+          const draggedId = Number(event.dataTransfer.getData("text/plain"));
+          checkAnswer(draggedId, part.id, slot);
+        });
+
+        row.appendChild(number);
+        row.appendChild(slot);
+        slotsContainer.appendChild(row);
+      });
+    }
+
+    function setCorrectAnswer(part, showMessage = true) {
+      placed.add(part.id);
+
+      const slot = slotsContainer.querySelector(`.drop-slot[data-part-id="${part.id}"]`);
+      if (slot) {
+        slot.classList.remove("incorrect", "drag-over");
+        slot.classList.add("correct");
+        slot.innerHTML = `<span class="placed-text">${part.name}</span>`;
+      }
+
+      const slotNumber = slotsContainer.querySelector(`.slot-number[data-part-id="${part.id}"]`);
+      if (slotNumber) slotNumber.classList.add("correct");
+
+      const marker = imageStage.querySelector(`.diagram-number[data-part-id="${part.id}"]`);
+      if (marker) {
+        marker.classList.add("correct", "pop");
+        window.setTimeout(() => marker.classList.remove("pop"), 400);
+      }
+
+      leaderSvg.querySelectorAll(`.leader-line[data-part-id="${part.id}"]`).forEach(line => line.classList.add("correct"));
+      leaderSvg.querySelectorAll(`.target-dot[data-part-id="${part.id}"]`).forEach(dot => dot.classList.add("correct"));
+
+      if (showMessage) setStatus(`<strong>Correct!</strong> ${part.name} matches number ${part.id}.`, "good");
+    }
+
+    function checkAnswer(labelId, targetId, slot) {
+      const label = parts.find(part => part.id === labelId);
+      const target = parts.find(part => part.id === targetId);
+      if (!label || !target) return;
+
+      if (labelId === targetId) {
+        setCorrectAnswer(label, true);
+        createLabels();
+        updateScore();
+      } else {
+        slot.classList.add("incorrect");
+        setStatus(`<strong>Try again.</strong> ${label.name} does not match number ${targetId}.`, "bad");
+        window.setTimeout(() => slot.classList.remove("incorrect"), 300);
+      }
+    }
+
+    function showOnlyRelevantNumbers(ids = null) {
+      const activeIds = ids ? new Set(ids.map(Number)) : null;
+      imageStage.querySelectorAll(".diagram-number").forEach(marker => {
+        const id = Number(marker.dataset.partId);
+        marker.classList.toggle("hidden", activeIds !== null && !activeIds.has(id));
+      });
+      leaderSvg.querySelectorAll(".leader-line, .target-dot").forEach(element => {
+        const id = Number(element.dataset.partId);
+        element.classList.toggle("hidden", activeIds !== null && !activeIds.has(id));
+      });
+    }
+
+    function resetActivity() {
+      placed = new Set();
+      labelOrder = shuffle(parts);
+      activityCard.classList.remove("wrapup-mode", "notes-mode");
+      completionPrompt.classList.remove("show");
+      createLeaderLines();
+      createDiagramNumbers();
+      createSlots();
+      createLabels();
+      scoreElement.textContent = `Score: 0/${parts.length}`;
+      setStatus("Drag a label from the left column into the correct numbered box.");
+      keyButton.textContent = "Show answer key";
+      keyButton.disabled = false;
+      shuffleButton.disabled = false;
+      showOnlyRelevantNumbers(null);
+      showNote(0, false);
+    }
+
+    function shuffleUnplacedLabels() {
+      const unplaced = shuffle(labelOrder.filter(part => !placed.has(part.id)));
+      const placedParts = labelOrder.filter(part => placed.has(part.id));
+      labelOrder = [...unplaced, ...placedParts];
+      createLabels();
+    }
+
+    function revealAnswerKey() {
+      const remaining = parts.filter(part => !placed.has(part.id));
+      if (remaining.length === 0) {
+        showWrapupPanel();
+        return;
+      }
+      setStatus("Answer key revealed. Correct labels are being placed in green.", "good");
+      remaining.forEach((part, index) => {
+        window.setTimeout(() => {
+          setCorrectAnswer(part, false);
+          createLabels();
+          updateScore();
+        }, index * 130);
+      });
+      keyButton.textContent = "Answer key shown";
+      keyButton.disabled = true;
+    }
+
+    function createNoteDots() {
+      noteDots.innerHTML = "";
+      studyNotes.forEach((_, index) => {
+        const dot = document.createElement("span");
+        dot.className = "note-dot";
+        if (index === currentNote) dot.classList.add("active");
+        noteDots.appendChild(dot);
+      });
+    }
+
+    function showNote(index, animate = true) {
+      currentNote = Math.max(0, Math.min(index, studyNotes.length - 1));
+      const update = () => {
+        const note = studyNotes[currentNote];
+        noteText.innerHTML = note.text;
+        notesCount.textContent = `Note ${currentNote + 1} of ${studyNotes.length}`;
+        prevNoteButton.disabled = currentNote === 0;
+        nextNoteButton.disabled = currentNote === studyNotes.length - 1;
+        createNoteDots();
+        if (activityCard.classList.contains("notes-mode")) showOnlyRelevantNumbers(note.ids);
+        noteText.classList.remove("fade-out");
+        if (animate) {
+          noteText.classList.remove("fade-in");
+          void noteText.offsetWidth;
+          noteText.classList.add("fade-in");
+        }
+      };
+      if (animate) {
+        noteText.classList.add("fade-out");
+        window.setTimeout(update, 170);
+      } else {
+        update();
+      }
+    }
+
+    function showCompletionPrompt() {
+      completionPrompt.classList.add("show");
+      shuffleButton.disabled = true;
+    }
+
+    function showWrapupPanel() { showCompletionPrompt(); }
+
+    function startStudyNotes() {
+      activityCard.classList.add("wrapup-mode", "notes-mode");
+      showNote(0, false);
+    }
+
+    prevNoteButton.addEventListener("click", () => showNote(currentNote - 1, true));
+    nextNoteButton.addEventListener("click", () => showNote(currentNote + 1, true));
+    resetButton.addEventListener("click", resetActivity);
+    wrapupResetButton.addEventListener("click", resetActivity);
+    startWrapupButton.addEventListener("click", startStudyNotes);
+    shuffleButton.addEventListener("click", shuffleUnplacedLabels);
+    keyButton.addEventListener("click", revealAnswerKey);
+
+    resetActivity();
+  </script>
+</body>
+</html>

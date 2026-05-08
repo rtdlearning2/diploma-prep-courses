@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Cochlea Interactive",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "3401", "--directory", "C:\\Users\\marc\\OneDrive\\CTS Diploma Prep Booklets\\Biology Ineractions\\ear2_interactive"],
+      "port": 3401
+    }
+  ]
+}

@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hormone Regulation: Feedback Loops</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --teal: #0f766e;
+      --teal-soft: #ccfbf1;
+      --amber: #d97706;
+      --amber-soft: #fef3c7;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #dbe3ef;
+      --shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: #e5eef8;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    button { font-family: inherit; }
+
+    .slide-stage {
+      width: min(100vw - 16px, 1280px);
+      aspect-ratio: 16 / 9;
+      max-height: calc(100vh - 16px);
+      background: radial-gradient(circle at top left, #ffffff 0%, #f8fafc 54%, #eef6ff 100%);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: clamp(14px, 2vw, 26px);
+    }
+
+    .screen {
+      min-height: 0;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .screen-inner {
+      width: min(980px, 100%);
+      display: grid;
+      gap: clamp(18px, 2vw, 28px);
+      justify-items: center;
+      text-align: center;
+      animation: fadeSlideIn 0.35s ease both;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--blue);
+      background: var(--blue-soft);
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      padding: 8px 15px;
+      font-size: clamp(13px, 1.05vw, 16px);
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    .big-title {
+      margin-bottom: 0;
+      font-size: clamp(42px, 6vw, 76px);
+      line-height: 0.95;
+      letter-spacing: -0.065em;
+    }
+
+    .lead {
+      margin: 0 auto;
+      max-width: 830px;
+      color: #334155;
+      font-size: clamp(23px, 2.5vw, 36px);
+      line-height: 1.22;
+      font-weight: 750;
+    }
+
+    .sublead {
+      margin: 0 auto;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: clamp(17px, 1.6vw, 24px);
+      line-height: 1.35;
+      font-weight: 650;
+    }
+
+    .two-ideas {
+      width: min(780px, 100%);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .idea-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px 22px;
+      text-align: left;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .idea-card h3 {
+      margin: 0 0 7px;
+      font-size: clamp(23px, 2.2vw, 34px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .idea-card p {
+      margin: 0;
+      color: #334155;
+      font-size: clamp(16px, 1.4vw, 21px);
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .idea-card.positive h3 { color: var(--amber); }
+    .idea-card.negative h3 { color: var(--teal); }
+
+    .topline {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .topline.hidden {
+      visibility: hidden;
+    }
+
+    .small-title {
+      font-size: clamp(16px, 1.25vw, 20px);
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    .progress-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 12px;
+      color: var(--muted);
+      font-size: clamp(12px, 1vw, 15px);
+      font-weight: 850;
+      pointer-events: auto;
+    }
+
+    .dots {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #cbd5e1;
+    }
+
+    .dot.done { background: var(--green); }
+    .dot.current { background: var(--blue); transform: scale(1.25); }
+
+    .quiz-layout {
+      width: min(970px, 100%);
+      display: grid;
+      gap: clamp(12px, 1.5vw, 18px);
+      justify-items: center;
+      animation: fadeSlideIn 0.35s ease both;
+      padding-top: 0;
+    }
+
+    .scenario-card {
+      width: 100%;
+      min-height: clamp(205px, 29vh, 305px);
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      padding: clamp(30px, 4vw, 56px);
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+
+    .scenario-card h2 {
+      margin: 0 0 16px;
+      font-size: clamp(34px, 4.2vw, 60px);
+      line-height: 0.95;
+      letter-spacing: -0.065em;
+    }
+
+    .scenario-card p {
+      margin: 0 auto;
+      max-width: 850px;
+      color: #334155;
+      font-size: clamp(21px, 2.3vw, 34px);
+      line-height: 1.18;
+      font-weight: 750;
+    }
+
+    .choice-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .choice-button {
+      border: 2px solid var(--border);
+      background: #ffffff;
+      border-radius: 24px;
+      min-height: clamp(84px, 13vh, 118px);
+      padding: 18px 22px;
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .choice-button:hover {
+      transform: translateY(-2px);
+      border-color: var(--blue);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .choice-button .label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: clamp(24px, 2.3vw, 36px);
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: -0.05em;
+    }
+
+    .choice-button .hint {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: clamp(15px, 1.35vw, 21px);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .choice-button.positive .label { color: var(--amber); }
+    .choice-button.negative .label { color: var(--teal); }
+
+    .choice-button.correct {
+      border-color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .choice-button.incorrect {
+      border-color: var(--red);
+      background: var(--red-soft);
+      animation: shake 0.34s ease-in-out;
+    }
+
+    .feedback-card {
+      width: min(920px, 100%);
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      padding: clamp(32px, 4vw, 58px);
+      text-align: center;
+      animation: fadeSlideIn 0.3s ease both;
+    }
+
+    .feedback-card.correct {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: #14532d;
+    }
+
+    .feedback-card.incorrect {
+      border-color: #fecaca;
+      background: #fff1f2;
+      color: #7f1d1d;
+    }
+
+    .feedback-card.info {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+      color: #1e3a8a;
+    }
+
+    .feedback-card h2 {
+      margin: 0 0 13px;
+      font-size: clamp(40px, 5vw, 70px);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+    }
+
+    .feedback-card p {
+      margin: 0 auto;
+      max-width: 830px;
+      font-size: clamp(24px, 2.5vw, 38px);
+      line-height: 1.2;
+      font-weight: 760;
+    }
+
+    .mini-card, .key-card, .wrap-card {
+      width: min(940px, 100%);
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      padding: clamp(30px, 4vw, 56px);
+      text-align: center;
+      display: grid;
+      gap: 20px;
+      animation: fadeSlideIn 0.35s ease both;
+    }
+
+    .mini-card h2, .key-card h2, .wrap-card h2 {
+      margin: 0;
+      font-size: clamp(40px, 5vw, 68px);
+      line-height: 0.95;
+      letter-spacing: -0.065em;
+    }
+
+    .mini-card .question, .wrap-card p {
+      margin: 0 auto;
+      max-width: 820px;
+      color: #334155;
+      font-size: clamp(21px, 2.3vw, 34px);
+      line-height: 1.2;
+      font-weight: 780;
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .answer-button {
+      min-height: 74px;
+      border: 2px solid var(--border);
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 15px 17px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text);
+      font-size: clamp(17px, 1.6vw, 25px);
+      font-weight: 850;
+      transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease;
+    }
+
+    .answer-button:hover {
+      transform: translateY(-1px);
+      border-color: var(--blue);
+    }
+
+    .answer-button.correct {
+      border-color: var(--green);
+      background: var(--green-soft);
+      color: #14532d;
+    }
+
+    .answer-button.incorrect {
+      border-color: var(--red);
+      background: var(--red-soft);
+      color: #7f1d1d;
+      animation: shake 0.34s ease-in-out;
+    }
+
+    .mini-feedback {
+      margin: 0 auto;
+      max-width: 780px;
+      border-radius: 18px;
+      padding: 14px 18px;
+      font-size: clamp(18px, 1.65vw, 25px);
+      font-weight: 750;
+      line-height: 1.25;
+    }
+
+    .mini-feedback.correct {
+      background: var(--green-soft);
+      color: #14532d;
+      border: 1px solid #86efac;
+    }
+
+    .mini-feedback.incorrect {
+      background: var(--red-soft);
+      color: #7f1d1d;
+      border: 1px solid #fecaca;
+    }
+
+    .key-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      text-align: left;
+    }
+
+    .key-column {
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px;
+      background: #fbfdff;
+    }
+
+    .key-column h3 {
+      margin: 0 0 12px;
+      font-size: clamp(24px, 2.5vw, 38px);
+      line-height: 1;
+      letter-spacing: -0.045em;
+    }
+
+    .key-column.positive h3 { color: var(--amber); }
+    .key-column.negative h3 { color: var(--teal); }
+
+    .key-column ul {
+      margin: 0;
+      padding-left: 24px;
+      color: #334155;
+      font-size: clamp(19px, 1.7vw, 27px);
+      line-height: 1.55;
+      font-weight: 800;
+    }
+
+    .controls {
+      min-height: 46px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 11px 18px;
+      font-size: clamp(13px, 1.1vw, 16px);
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: #b8c7dd;
+      background: #ffffff;
+    }
+
+    .btn.primary {
+      color: #ffffff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .btn.primary:hover { background: var(--blue-dark); }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .quiet-link {
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+      color: var(--muted);
+    }
+
+    .hidden { display: none !important; }
+
+    .debug-toggle {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 20;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .debug-panel {
+      position: absolute;
+      right: 12px;
+      bottom: 54px;
+      width: min(430px, calc(100% - 24px));
+      max-height: 48%;
+      overflow: auto;
+      background: rgba(15, 23, 42, 0.96);
+      color: #e2e8f0;
+      border-radius: 14px;
+      padding: 10px;
+      z-index: 19;
+      font-size: 11px;
+      box-shadow: var(--shadow);
+    }
+
+    .debug-panel pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 8px 0 0;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+
+    @media (max-width: 900px) {
+      body {
+        align-items: flex-start;
+        padding: 0;
+        background: var(--bg);
+      }
+
+      .slide-stage {
+        width: 100vw;
+        min-height: 100vh;
+        max-height: none;
+        aspect-ratio: auto;
+        border-radius: 0;
+      }
+
+      .screen {
+        overflow-y: auto;
+      }
+
+      .two-ideas,
+      .choice-row,
+      .answer-grid,
+      .key-columns {
+        grid-template-columns: 1fr;
+      }
+
+      .scenario-card { min-height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-stage" id="slideStage">
+    <div class="topline hidden" id="topline">
+      <div class="small-title" id="smallTitle">Hormone Feedback Loops</div>
+      <div class="progress-pill" id="progressPill">
+        <span id="progressText">Scenario 1 of 6</span>
+        <span class="dots" id="progressDots"></span>
+      </div>
+    </div>
+
+    <main class="screen" id="screen" aria-live="polite"></main>
+
+    <div class="controls" id="controls">
+      <div class="button-group" id="leftControls"></div>
+      <div class="button-group" id="mainControls"></div>
+    </div>
+
+    <button id="debugToggle" class="debug-toggle hidden" type="button">Debug</button>
+    <aside id="debugPanel" class="debug-panel hidden" aria-label="Debug panel">
+      <strong>Debug mode</strong>
+      <pre id="debugOutput"></pre>
+    </aside>
+  </div>
+
+  <script>
+    const feedbackScenarios = [
+      {
+        id: "insulin",
+        title: "After a meal",
+        text: "Blood glucose rises. Insulin is released and blood glucose decreases toward normal.",
+        answer: "negative",
+        explanation: "Insulin brings high blood glucose back toward normal."
+      },
+      {
+        id: "glucagon",
+        title: "Between meals",
+        text: "Blood glucose drops. Glucagon is released and blood glucose rises toward normal.",
+        answer: "negative",
+        explanation: "Glucagon raises blood glucose when it becomes too low."
+      },
+      {
+        id: "parturition",
+        title: "Childbirth",
+        text: "Uterine contractions stimulate oxytocin release. Oxytocin causes stronger contractions, leading to more oxytocin.",
+        answer: "positive",
+        explanation: "More contractions lead to more oxytocin, which causes even stronger contractions."
+      },
+      {
+        id: "ovulation",
+        title: "Ovulation",
+        text: "Rising estrogen stimulates a surge of LH, helping trigger ovulation.",
+        answer: "positive",
+        explanation: "Rising estrogen stimulates more hormone release instead of suppressing it."
+      },
+      {
+        id: "target-gland-feedback",
+        title: "Target gland hormone",
+        text: "A target gland hormone increases, then inhibits the hypothalamus and anterior pituitary from releasing more hormones.",
+        answer: "negative",
+        explanation: "The final hormone reduces earlier hormone release to prevent overproduction."
+      },
+      {
+        id: "thyroid-example",
+        title: "Thyroid regulation",
+        text: "When thyroid hormone levels become high enough, they reduce signals from the pituitary and hypothalamus.",
+        answer: "negative",
+        explanation: "This prevents thyroid hormone levels from continuing to rise too far."
+      }
+    ];
+
+    const miniQuestions = [
+      {
+        id: "hypo",
+        prompt: "A gland secretes too little hormone. What is this called?",
+        choices: ["A. Hyposecretion", "B. Hypersecretion", "C. Positive feedback", "D. Antagonistic hormone action"],
+        answer: "A. Hyposecretion",
+        correctFeedback: "Correct. Hypo- means under or too little.",
+        incorrectFeedback: "Try again. Hypo- means under or too little."
+      },
+      {
+        id: "hyper",
+        prompt: "A gland secretes too much hormone. What is this called?",
+        choices: ["A. Hyposecretion", "B. Hypersecretion", "C. Negative feedback", "D. Homeostasis"],
+        answer: "B. Hypersecretion",
+        correctFeedback: "Correct. Hyper- means over or too much.",
+        incorrectFeedback: "Try again. Hyper- means over or too much."
+      }
+    ];
+
+    const studyNotes = [
+      {
+        title: "Positive feedback",
+        text: "Positive feedback <strong>amplifies</strong> a change. The response causes more of the same process to happen."
+      },
+      {
+        title: "Negative feedback",
+        text: "Negative feedback <strong>stabilizes</strong> the body. The response reverses a change and helps restore homeostasis."
+      },
+      {
+        title: "Most hormones use negative feedback",
+        text: "Most hormone systems use negative feedback because hormone levels need to stay within a healthy range."
+      },
+      {
+        title: "Childbirth example",
+        text: "During parturition, oxytocin causes contractions, and contractions stimulate more oxytocin. This is positive feedback."
+      },
+      {
+        title: "Ovulation example",
+        text: "Before ovulation, rising estrogen stimulates an LH surge. This is another positive feedback example."
+      },
+      {
+        title: "Insulin and glucagon",
+        text: "Insulin lowers blood glucose, while glucagon raises blood glucose. They are antagonistic hormones because they work in opposite directions."
+      },
+      {
+        title: "Hyposecretion",
+        text: "Hyposecretion means <strong>under-secretion</strong>: too little hormone is produced."
+      },
+      {
+        title: "Hypersecretion",
+        text: "Hypersecretion means <strong>over-secretion</strong>: too much hormone is produced."
+      },
+      {
+        title: "Memory hook",
+        text: "Positive feedback pushes a process forward. Negative feedback brings the body back toward normal."
+      }
+    ];
+
+    const state = {
+      screen: "intro",
+      scenarioOrder: [],
+      currentScenarioIndex: 0,
+      attempts: {},
+      results: {},
+      lastChoice: null,
+      miniIndex: 0,
+      miniComplete: {},
+      miniFeedback: null,
+      answerKeyUsed: false,
+      currentNoteIndex: 0
+    };
+
+    const els = {
+      screen: document.getElementById("screen"),
+      controls: document.getElementById("controls"),
+      leftControls: document.getElementById("leftControls"),
+      mainControls: document.getElementById("mainControls"),
+      topline: document.getElementById("topline"),
+      smallTitle: document.getElementById("smallTitle"),
+      progressText: document.getElementById("progressText"),
+      progressDots: document.getElementById("progressDots"),
+      debugToggle: document.getElementById("debugToggle"),
+      debugPanel: document.getElementById("debugPanel"),
+      debugOutput: document.getElementById("debugOutput")
+    };
+
+    function initActivity() {
+      state.screen = "intro";
+      state.scenarioOrder = shuffleArray(feedbackScenarios.map(card => card.id));
+      state.currentScenarioIndex = 0;
+      state.attempts = {};
+      state.results = {};
+      state.lastChoice = null;
+      state.miniIndex = 0;
+      state.miniComplete = {};
+      state.miniFeedback = null;
+      state.answerKeyUsed = false;
+      state.currentNoteIndex = 0;
+
+      feedbackScenarios.forEach(card => {
+        state.attempts[card.id] = 0;
+        state.results[card.id] = null;
+      });
+
+      miniQuestions.forEach(question => {
+        state.miniComplete[question.id] = false;
+      });
+
+      setupDebugMode();
+      render();
+    }
+
+    function render() {
+      renderTopline();
+      renderControls();
+
+      if (state.screen === "intro") renderIntro();
+      if (state.screen === "sorter") renderSorter();
+      if (state.screen === "feedback") renderFeedback();
+      if (state.screen === "complete") renderComplete();
+      if (state.screen === "miniIntro") renderMiniIntro();
+      if (state.screen === "miniCheck") renderMiniCheck();
+      if (state.screen === "answerKey") renderAnswerKey();
+      if (state.screen === "wrapUp") renderWrapUp();
+
+      updateDebug();
+    }
+
+    function renderTopline() {
+      const shouldHide = state.screen === "intro";
+      els.topline.classList.toggle("hidden", shouldHide);
+      els.progressDots.innerHTML = "";
+
+      if (shouldHide) return;
+
+      if (["sorter", "feedback", "complete", "miniIntro"].includes(state.screen)) {
+        els.smallTitle.textContent = "Hormone Feedback Loops";
+        const currentNumber = Math.min(state.currentScenarioIndex + 1, feedbackScenarios.length);
+        els.progressText.textContent = state.screen === "complete" || state.screen === "miniIntro"
+          ? "Feedback examples complete"
+          : `Scenario ${currentNumber} of ${feedbackScenarios.length}`;
+        feedbackScenarios.forEach((_, index) => {
+          const dot = document.createElement("span");
+          dot.className = "dot";
+          if (index < getCorrectScenarioCount()) dot.classList.add("done");
+          if (index === state.currentScenarioIndex && state.screen === "sorter") dot.classList.add("current");
+          els.progressDots.appendChild(dot);
+        });
+        return;
+      }
+
+      if (state.screen === "miniCheck") {
+        els.smallTitle.textContent = "Hormone Imbalance Check";
+        els.progressText.textContent = `Question ${state.miniIndex + 1} of ${miniQuestions.length}`;
+        miniQuestions.forEach((question, index) => {
+          const dot = document.createElement("span");
+          dot.className = "dot";
+          if (state.miniComplete[question.id]) dot.classList.add("done");
+          if (index === state.miniIndex) dot.classList.add("current");
+          els.progressDots.appendChild(dot);
+        });
+        return;
+      }
+
+      if (state.screen === "answerKey") {
+        els.smallTitle.textContent = "Answer Key";
+        els.progressText.textContent = "Review";
+        return;
+      }
+
+      if (state.screen === "wrapUp") {
+        els.smallTitle.textContent = "Wrap Up";
+        els.progressText.textContent = `Note ${state.currentNoteIndex + 1} of ${studyNotes.length}`;
+        studyNotes.forEach((_, index) => {
+          const dot = document.createElement("span");
+          dot.className = "dot";
+          if (index < state.currentNoteIndex) dot.classList.add("done");
+          if (index === state.currentNoteIndex) dot.classList.add("current");
+          els.progressDots.appendChild(dot);
+        });
+      }
+    }
+
+    function renderControls() {
+      els.leftControls.innerHTML = "";
+      els.mainControls.innerHTML = "";
+
+      if (state.screen === "intro") {
+        addButton(els.mainControls, "Start", "primary", () => setScreen("sorter"));
+        return;
+      }
+
+      if (state.screen === "sorter") {
+        addButton(els.leftControls, "Answer Key", "quiet-link", showAnswerKey);
+        addButton(els.leftControls, "Reset", "quiet-link", initActivity);
+        return;
+      }
+
+      if (state.screen === "feedback") {
+        addButton(els.leftControls, "Answer Key", "quiet-link", showAnswerKey);
+        addButton(els.leftControls, "Reset", "quiet-link", initActivity);
+        if (state.lastChoice && state.lastChoice.correct) {
+          addButton(els.mainControls, isLastScenario() ? "Continue" : "Next Scenario", "primary", nextAfterCorrect);
+        } else {
+          addButton(els.mainControls, "Try Again", "primary", () => setScreen("sorter"));
+          addButton(els.mainControls, "Show Me", "", revealCurrentAnswer);
+        }
+        return;
+      }
+
+      if (state.screen === "complete") {
+        addButton(els.leftControls, "Reset", "quiet-link", initActivity);
+        addButton(els.mainControls, "Continue", "primary", () => setScreen("miniIntro"));
+        return;
+      }
+
+      if (state.screen === "miniIntro") {
+        addButton(els.leftControls, "Reset", "quiet-link", initActivity);
+        addButton(els.mainControls, "Start Mini-Check", "primary", () => setScreen("miniCheck"));
+        return;
+      }
+
+      if (state.screen === "miniCheck") {
+        addButton(els.leftControls, "Reset", "quiet-link", initActivity);
+        if (state.miniFeedback && state.miniFeedback.correct) {
+          addButton(els.mainControls, isLastMiniQuestion() ? "Wrap Up" : "Next Question", "primary", nextMiniQuestion);
+        }
+        return;
+      }
+
+      if (state.screen === "answerKey") {
+        addButton(els.leftControls, "Reset", "quiet-link", initActivity);
+        addButton(els.mainControls, "Continue", "primary", () => setScreen("miniIntro"));
+        addButton(els.mainControls, "Wrap Up", "", () => setScreen("wrapUp"));
+        return;
+      }
+
+      if (state.screen === "wrapUp") {
+        addButton(els.leftControls, "Reset", "quiet-link", initActivity);
+        addButton(els.leftControls, "Activity", "quiet-link", returnToActivity);
+        addButton(els.mainControls, "Back", "", previousNote, state.currentNoteIndex === 0);
+        addButton(els.mainControls, state.currentNoteIndex === studyNotes.length - 1 ? "Restart Notes" : "Next", "primary", nextNote);
+      }
+    }
+
+    function renderIntro() {
+      els.screen.innerHTML = `
+        <section class="screen-inner">
+          <div class="kicker">Biology interaction</div>
+          <h1 class="big-title">Hormone Regulation:<br>Feedback Loops</h1>
+          <p class="lead">You will see one hormone scenario at a time.</p>
+          <div class="two-ideas">
+            <div class="idea-card positive">
+              <h3>Positive feedback</h3>
+              <p>Amplifies a change.</p>
+            </div>
+            <div class="idea-card negative">
+              <h3>Negative feedback</h3>
+              <p>Brings the body back toward normal.</p>
+            </div>
+          </div>
+          <p class="sublead">For each scenario, choose the feedback type that best fits. After that, you’ll complete two quick hormone-imbalance questions.</p>
+        </section>
+      `;
+    }
+
+    function renderSorter() {
+      const card = getCurrentScenario();
+      state.lastChoice = null;
+      els.screen.innerHTML = `
+        <section class="quiz-layout">
+          <article class="scenario-card">
+            <div>
+              <h2>${escapeHtml(card.title)}</h2>
+              <p>${escapeHtml(card.text)}</p>
+            </div>
+          </article>
+          <div class="choice-row">
+            <button class="choice-button positive" type="button" data-choice="positive">
+              <span class="label"><span aria-hidden="true">⟳</span> Positive</span>
+              <span class="hint">Amplifies change</span>
+            </button>
+            <button class="choice-button negative" type="button" data-choice="negative">
+              <span class="label"><span aria-hidden="true">↔</span> Negative</span>
+              <span class="hint">Restores normal</span>
+            </button>
+          </div>
+        </section>
+      `;
+
+      document.querySelectorAll(".choice-button").forEach(button => {
+        button.addEventListener("click", () => submitScenarioAnswer(button.dataset.choice, button));
+      });
+    }
+
+    function renderFeedback() {
+      const card = getCurrentScenario();
+      const correct = state.lastChoice && state.lastChoice.correct;
+      const className = correct ? "correct" : "incorrect";
+      const heading = correct ? "Correct." : "Try again.";
+      const message = correct ? getCorrectExplanation(card) : getHint(card);
+      els.screen.innerHTML = `
+        <section class="feedback-card ${className}">
+          <h2>${heading}</h2>
+          <p>${message}</p>
+        </section>
+      `;
+    }
+
+    function renderComplete() {
+      els.screen.innerHTML = `
+        <section class="feedback-card info">
+          <h2>Great work.</h2>
+          <p>You sorted the feedback examples. Most hormone systems use negative feedback because they help keep the body within a healthy range.</p>
+        </section>
+      `;
+    }
+
+    function renderMiniIntro() {
+      els.screen.innerHTML = `
+        <section class="screen-inner">
+          <div class="kicker">One more check</div>
+          <h1 class="big-title">Too little or<br>too much?</h1>
+          <p class="lead">Now check two hormone imbalance terms.</p>
+        </section>
+      `;
+    }
+
+    function renderMiniCheck() {
+      const question = miniQuestions[state.miniIndex];
+      const feedbackHtml = state.miniFeedback
+        ? `<div class="mini-feedback ${state.miniFeedback.correct ? "correct" : "incorrect"}">${state.miniFeedback.message}</div>`
+        : "";
+
+      els.screen.innerHTML = `
+        <section class="mini-card">
+          <h2>Hormone Imbalance Check</h2>
+          <p class="question">${escapeHtml(question.prompt)}</p>
+          <div class="answer-grid">
+            ${question.choices.map(choice => `<button class="answer-button" type="button" data-choice="${escapeHtml(choice)}">${escapeHtml(choice)}</button>`).join("")}
+          </div>
+          ${feedbackHtml}
+        </section>
+      `;
+
+      document.querySelectorAll(".answer-button").forEach(button => {
+        button.addEventListener("click", () => submitMiniAnswer(button.dataset.choice, button));
+      });
+    }
+
+    function renderAnswerKey() {
+      const positiveCards = feedbackScenarios.filter(card => card.answer === "positive");
+      const negativeCards = feedbackScenarios.filter(card => card.answer === "negative");
+      els.screen.innerHTML = `
+        <section class="key-card">
+          <h2>Answer Key</h2>
+          <div class="key-columns">
+            <div class="key-column positive">
+              <h3>Positive Feedback</h3>
+              <ul>${positiveCards.map(card => `<li>${escapeHtml(card.title)}</li>`).join("")}</ul>
+            </div>
+            <div class="key-column negative">
+              <h3>Negative Feedback</h3>
+              <ul>${negativeCards.map(card => `<li>${escapeHtml(card.title)}</li>`).join("")}</ul>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderWrapUp() {
+      const note = studyNotes[state.currentNoteIndex];
+      els.screen.innerHTML = `
+        <section class="wrap-card">
+          <h2>${note.title}</h2>
+          <p>${note.text}</p>
+        </section>
+      `;
+    }
+
+    function submitScenarioAnswer(choice, button) {
+      const card = getCurrentScenario();
+      const correct = choice === card.answer;
+      state.attempts[card.id] += correct ? 0 : 1;
+      state.lastChoice = { choice, correct };
+
+      if (correct) {
+        state.results[card.id] = choice;
+        button.classList.add("correct");
+      } else {
+        button.classList.add("incorrect");
+      }
+
+      setTimeout(() => setScreen("feedback"), 240);
+    }
+
+    function getHint(card) {
+      if (state.attempts[card.id] >= 2) {
+        return card.answer === "positive"
+          ? "This is positive feedback because the response amplifies the original process."
+          : "This is negative feedback because the response brings the body back toward normal.";
+      }
+      return "Ask yourself: does the response make the change stronger, or bring the body back toward normal?";
+    }
+
+    function getCorrectExplanation(card) {
+      const type = card.answer === "positive" ? "positive feedback" : "negative feedback";
+      return `This is ${type}. ${card.explanation}`;
+    }
+
+    function revealCurrentAnswer() {
+      const card = getCurrentScenario();
+      state.results[card.id] = card.answer;
+      state.lastChoice = { choice: card.answer, correct: true, revealed: true };
+      setScreen("feedback");
+    }
+
+    function nextAfterCorrect() {
+      if (isLastScenario()) {
+        setScreen("complete");
+      } else {
+        state.currentScenarioIndex += 1;
+        state.lastChoice = null;
+        setScreen("sorter");
+      }
+    }
+
+    function showAnswerKey() {
+      feedbackScenarios.forEach(card => {
+        state.results[card.id] = card.answer;
+      });
+      state.answerKeyUsed = true;
+      setScreen("answerKey");
+    }
+
+    function submitMiniAnswer(choice, button) {
+      const question = miniQuestions[state.miniIndex];
+      const correct = choice === question.answer;
+
+      if (correct) {
+        state.miniComplete[question.id] = true;
+        state.miniFeedback = { correct: true, message: question.correctFeedback };
+        button.classList.add("correct");
+      } else {
+        state.miniFeedback = { correct: false, message: question.incorrectFeedback };
+        button.classList.add("incorrect");
+      }
+
+      setTimeout(render, 240);
+    }
+
+    function nextMiniQuestion() {
+      state.miniFeedback = null;
+      if (isLastMiniQuestion()) {
+        setScreen("wrapUp");
+      } else {
+        state.miniIndex += 1;
+        setScreen("miniCheck");
+      }
+    }
+
+    function nextNote() {
+      if (state.currentNoteIndex === studyNotes.length - 1) {
+        state.currentNoteIndex = 0;
+      } else {
+        state.currentNoteIndex += 1;
+      }
+      render();
+    }
+
+    function previousNote() {
+      state.currentNoteIndex = Math.max(0, state.currentNoteIndex - 1);
+      render();
+    }
+
+    function returnToActivity() {
+      if (getCorrectScenarioCount() >= feedbackScenarios.length) {
+        setScreen("miniIntro");
+      } else {
+        setScreen("sorter");
+      }
+    }
+
+    function setScreen(screenName) {
+      state.screen = screenName;
+      render();
+    }
+
+    function addButton(container, label, className, handler, disabled = false) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `btn ${className || ""}`.trim();
+      button.textContent = label;
+      button.disabled = disabled;
+      button.addEventListener("click", handler);
+      container.appendChild(button);
+      return button;
+    }
+
+    function getCurrentScenario() {
+      return feedbackScenarios.find(card => card.id === state.scenarioOrder[state.currentScenarioIndex]);
+    }
+
+    function getCorrectScenarioCount() {
+      return feedbackScenarios.filter(card => state.results[card.id] === card.answer).length;
+    }
+
+    function isLastScenario() {
+      return state.currentScenarioIndex >= feedbackScenarios.length - 1;
+    }
+
+    function isLastMiniQuestion() {
+      return state.miniIndex >= miniQuestions.length - 1;
+    }
+
+    function shuffleArray(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function setupDebugMode() {
+      const debugEnabled = new URLSearchParams(window.location.search).get("debug") === "1";
+      if (!debugEnabled) {
+        els.debugToggle.classList.add("hidden");
+        els.debugPanel.classList.add("hidden");
+        return;
+      }
+      els.debugToggle.classList.remove("hidden");
+    }
+
+    function updateDebug() {
+      if (els.debugToggle.classList.contains("hidden")) return;
+      const current = getCurrentScenario();
+      const debugState = {
+        screen: state.screen,
+        scenarioOrder: state.scenarioOrder,
+        currentScenarioIndex: state.currentScenarioIndex,
+        currentScenario: current ? current.id : null,
+        attempts: state.attempts,
+        results: state.results,
+        correctScenarioCount: getCorrectScenarioCount(),
+        lastChoice: state.lastChoice,
+        miniIndex: state.miniIndex,
+        miniComplete: state.miniComplete,
+        miniFeedback: state.miniFeedback,
+        answerKeyUsed: state.answerKeyUsed,
+        currentNoteIndex: state.currentNoteIndex
+      };
+      els.debugOutput.textContent = JSON.stringify(debugState, null, 2);
+    }
+
+    els.debugToggle.addEventListener("click", () => {
+      els.debugPanel.classList.toggle("hidden");
+      updateDebug();
+    });
+
+    initActivity();
+  </script>
+</body>
+</html>

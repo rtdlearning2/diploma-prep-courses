@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autonomic Nervous System</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f4f7f8;
+  }
+
+  .page {
+    display: flex;
+    flex-direction: row;
+    width: 100vw;
+    height: 100vh;
+    background: #f4f7f8;
+  }
+
+  /* ── Left: panel ── */
+  .panel-side {
+    flex-shrink: 0;
+    width: 340px;
+    background: #ffffff;
+    border-right: 1px solid #dde0ea;
+    display: flex;
+    flex-direction: column;
+    padding: 30px 26px 24px;
+    min-height: 0;
+  }
+
+  .panel-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    line-height: 1.3;
+    margin-bottom: 20px;
+  }
+
+  .divider {
+    height: 1px;
+    background: #ebebf2;
+    margin-bottom: 22px;
+  }
+
+  .content-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .wrapup-area {
+    padding-top: 18px;
+    margin-top: 18px;
+    border-top: 1px solid #ebebf2;
+  }
+
+  .wrapup-btn {
+    display: block;
+    width: 100%;
+    padding: 13px 14px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s;
+  }
+  .wrapup-btn:hover { background: #15803d; }
+  .wrapup-btn.active { background: #444460; }
+
+  /* ── Instructions ── */
+  .instructions {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: opacity 0.3s ease;
+    overflow: hidden;
+  }
+  .instructions.hidden { opacity: 0; pointer-events: none; }
+
+  .instr-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #777;
+  }
+
+  .instr-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .step-num {
+    width: 25px;
+    height: 25px;
+    min-width: 25px;
+    border-radius: 50%;
+    background: #f0f0f6;
+    color: #555;
+    font-size: 0.74rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .step-text {
+    font-size: 0.91rem;
+    color: #444;
+    line-height: 1.48;
+  }
+  .step-text strong { color: #1a1a2e; }
+
+  .instr-rule { height: 1px; background: #f0f0f6; }
+
+  /* ── Hover display ── */
+  .hover-display {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .hover-display.visible { opacity: 1; pointer-events: auto; }
+
+  .hover-eyebrow {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #777;
+  }
+  .hover-text {
+    font-size: 1.02rem;
+    font-weight: 600;
+    line-height: 1.48;
+    color: #1a1a2e;
+  }
+  .hover-text.sym  { color: #c9263a; }
+  .hover-text.para { color: #1460a8; }
+
+  .back-hint {
+    font-size: 0.72rem;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.15s;
+    margin-top: 8px;
+  }
+  .back-hint:hover { color: #333; }
+
+  /* ── Study notes ── */
+  .notes-panel {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    min-height: 0;
+  }
+
+  .notes-panel.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  .notes-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .notes-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #1a1a2e;
+    letter-spacing: -0.02em;
+  }
+
+  .notes-count {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #777;
+    white-space: nowrap;
+  }
+
+  .note-text {
+    min-height: 0;
+    overflow: hidden;
+    align-self: center;
+    font-size: 0.91rem;
+    line-height: 1.42;
+    color: #333;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    padding-right: 2px;
+  }
+
+  .note-text strong {
+    color: #1a1a2e;
+    font-weight: 800;
+  }
+
+  .note-text .sym-word {
+    color: #c9263a;
+    font-weight: 800;
+  }
+
+  .note-text .para-word {
+    color: #1460a8;
+    font-weight: 800;
+  }
+
+  .note-text.fade-out {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  .note-text.fade-in {
+    animation: noteFadeIn 0.35s ease-out both;
+  }
+
+  @keyframes noteFadeIn {
+    0% { opacity: 0; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .notes-bottom {
+    display: grid;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .notes-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .note-button {
+    border: 1px solid #cfd5df;
+    background: #ffffff;
+    color: #1a1a2e;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 0.76rem;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .note-button:hover,
+  .note-button:focus-visible {
+    border-color: #16a34a;
+    color: #166534;
+    outline: none;
+  }
+
+  .note-button:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .note-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+  }
+
+  .note-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c6ccd8;
+  }
+
+  .note-dot.active {
+    width: 22px;
+    border-radius: 999px;
+    background: #16a34a;
+  }
+
+  /* ── Right: diagram ── */
+  .diagram-side {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: 0;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .diagram-shell {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    justify-items: center;
+    padding: 12px 14px;
+    background: #ffffff;
+  }
+
+  .diagram-topbar {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    min-height: 38px;
+  }
+
+  .image-toggle {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid #dbe3ee;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.08);
+  }
+
+  .image-toggle-btn {
+    border: none;
+    background: transparent;
+    color: #526071;
+    font-size: 0.74rem;
+    font-weight: 800;
+    padding: 7px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .image-toggle-btn:hover,
+  .image-toggle-btn:focus-visible {
+    color: #1460a8;
+    outline: none;
+  }
+
+  .image-toggle-btn.active {
+    background: #1460a8;
+    color: #ffffff;
+  }
+
+  .diagram-main {
+    width: 100%;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .diagram-wrap {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    flex-shrink: 0;
+  }
+
+  .img-clip {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.11);
+    line-height: 0;
+    background: #ffffff;
+  }
+
+  #diagram-img {
+    display: block;
+    max-height: calc(100vh - 108px);
+    width: auto;
+    max-width: 100%;
+    transition: opacity 0.2s ease;
+  }
+
+  .diagram-legend {
+    width: 100%;
+    min-height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 22px;
+    padding-top: 2px;
+    color: #555;
+    font-size: 0.78rem;
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+  }
+
+  .dot-org {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border-radius: 50%;
+    background: #1460a8;
+    color: #fff;
+    font-size: 0.58rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dot-sym {
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    border-radius: 50%;
+    background: #d62839;
+    display: inline-block;
+  }
+
+  .dot-para {
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    border-radius: 50%;
+    background: #1460a8;
+    display: inline-block;
+  }
+
+  /* ── Spots ── */
+  .spot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: opacity 0.18s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .spot:hover { transform: translate(-50%, -50%) scale(1.45); }
+
+  .spot.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .spot-organ {
+    width: 26px;
+    height: 26px;
+    background: #1460a8;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 8px rgba(20,96,168,0.5);
+  }
+
+  .spot-sym {
+    width: 12px;
+    height: 12px;
+    background: #d62839;
+    border: 1.5px solid rgba(255,255,255,0.55);
+    box-shadow: 0 1px 5px rgba(214,40,57,0.5);
+  }
+
+  .spot-para {
+    width: 12px;
+    height: 12px;
+    background: #1460a8;
+    border: 1.5px solid rgba(255,255,255,0.55);
+    box-shadow: 0 1px 5px rgba(20,96,168,0.5);
+  }
+
+  .spot.lit.spot-organ { box-shadow: 0 0 0 3px rgba(20,96,168,0.3), 0 2px 10px rgba(20,96,168,0.4); transform: translate(-50%,-50%) scale(1.2); }
+  .spot.lit.spot-sym   { box-shadow: 0 0 0 3px rgba(214,40,57,0.35); transform: translate(-50%,-50%) scale(1.35); }
+  .spot.lit.spot-para  { box-shadow: 0 0 0 3px rgba(20,96,168,0.35); transform: translate(-50%,-50%) scale(1.35); }
+
+  .ref-mode .spot { display: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Left: panel ── -->
+  <div class="panel-side">
+    <div class="panel-title">Autonomic Nervous System</div>
+
+    <div class="divider"></div>
+
+    <div class="content-area">
+
+      <div class="instructions" id="instructions">
+        <div class="instr-eyebrow">How to explore</div>
+
+        <div class="instr-step">
+          <div class="step-num">1</div>
+          <div class="step-text">Click <strong>numbered blue circles</strong> to compare sympathetic and parasympathetic effects on each organ.</div>
+        </div>
+
+        <div class="instr-rule"></div>
+
+        <div class="instr-step">
+          <div class="step-num">2</div>
+          <div class="step-text">Click <strong>red or blue dots</strong> to reveal specific nerve or effect labels.</div>
+        </div>
+
+        <div class="instr-rule"></div>
+
+        <div class="instr-step">
+          <div class="step-num">3</div>
+          <div class="step-text">Use the toggle above the image to switch between the <strong>interactive</strong> and <strong>labeled</strong> views.</div>
+        </div>
+      </div>
+
+      <div class="hover-display" id="hover-display">
+        <div class="hover-eyebrow" id="hover-eyebrow"></div>
+        <div class="hover-text" id="hover-text"></div>
+        <div class="back-hint" onclick="resetToInstructions()">&#8592; back to instructions</div>
+      </div>
+
+      <div class="notes-panel" id="notes-panel" aria-label="Study notes">
+        <div class="notes-top">
+          <div class="notes-title">Study Notes</div>
+          <div class="notes-count" id="notes-count">Note 1 of 6</div>
+        </div>
+
+        <div class="note-text" id="note-text"></div>
+
+        <div class="notes-bottom">
+          <div class="notes-nav">
+            <button class="note-button" id="prev-note" type="button" onclick="showNote(currentNote - 1)">Back</button>
+            <div class="note-dots" id="note-dots" aria-hidden="true"></div>
+            <button class="note-button" id="next-note" type="button" onclick="showNote(currentNote + 1)">Next</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="wrapup-area">
+      <button class="wrapup-btn" id="wrapup-btn" onclick="toggleStudyNotes()">Wrap Up / Study Notes</button>
+    </div>
+  </div>
+
+  <!-- ── Right: diagram ── -->
+  <div class="diagram-side">
+    <div class="diagram-shell">
+      <div class="diagram-topbar">
+        <div class="image-toggle" aria-label="Image view toggle">
+          <button class="image-toggle-btn active" id="interactive-toggle" type="button" onclick="setInteractiveMode()">Interactive</button>
+          <button class="image-toggle-btn" id="reference-toggle" type="button" onclick="setReferenceMode()">Labeled Reference</button>
+        </div>
+      </div>
+
+      <div class="diagram-main">
+        <div class="diagram-wrap" id="diagram-wrap">
+          <div class="img-clip">
+            <img id="diagram-img" src="2 - Text Removed.png" alt="ANS diagram">
+          </div>
+        </div>
+      </div>
+
+      <div class="diagram-legend" aria-label="Diagram legend">
+        <div class="legend-item"><span class="dot-org">1</span> Organ (numbered)</div>
+        <div class="legend-item"><span class="dot-sym"></span> Sympathetic effect</div>
+        <div class="legend-item"><span class="dot-para"></span> Parasympathetic effect</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+const BASE_IMAGE = '2 - Text Removed.png';
+const COMPLETE_IMAGE = '1 - Complete with labels (original).png';
+const SYMPATHETIC_IMAGE = '3 - Sympathetic Only.png';
+const PARASYMPATHETIC_IMAGE = '4 - Parasympathetic Only.png';
+
+const SPOTS = [
+  { type:'organ', num:1, l:49,   t:8,  text:'Eye — Sym: dilates pupil, inhibits tears  ·  Para: constricts pupil, stimulates tears' },
+  { type:'organ', num:2, l:46.5, t:18, text:'Salivary Glands — Sym: inhibits salivation  ·  Para: stimulates salivation' },
+  { type:'organ', num:3, l:47,   t:30, text:'Lungs — Sym: dilates air passages  ·  Para: constricts bronchioles' },
+  { type:'organ', num:4, l:47,   t:43, text:'Heart — Sym: speeds heart rate  ·  Para: slows heart rate' },
+  { type:'organ', num:5, l:48,   t:55, text:'Liver & Gallbladder — Sym: stimulates glucose release  ·  Para: stimulates bile release' },
+  { type:'organ', num:6, l:40,   t:63, text:'Adrenal Gland — Sym: stimulates adrenaline secretion  ·  Para: no direct innervation' },
+  { type:'organ', num:7, l:53,   t:63, text:'Stomach & Pancreas — Sym: no direct innervation  ·  Para: increases digestive activity' },
+  { type:'organ', num:8, l:48,   t:76, text:'Intestines — Sym: decreases intestinal activity  ·  Para: increases intestinal activity' },
+  { type:'organ', num:9, l:48,   t:90, text:'Bladder — Sym: inhibits urination  ·  Para: stimulates urination' },
+  { type:'sym',  l:33, t:8,  text:'Inhibits tears' },
+  { type:'sym',  l:31, t:18, text:'Inhibits salivation' },
+  { type:'sym',  l:35, t:31, text:'Dilates air passages' },
+  { type:'sym',  l:36, t:43, text:'Speeds heart' },
+  { type:'sym',  l:37, t:55, text:'Stimulates liver to release glucose' },
+  { type:'sym',  l:37, t:63, text:'Stimulates adrenal secretion' },
+  { type:'sym',  l:36, t:76, text:'Decreases intestinal activity' },
+  { type:'sym',  l:43, t:91, text:'Inhibits urination' },
+  { type:'sym',  l:5,  t:20, text:'Cervical Nerves' },
+  { type:'sym',  l:5,  t:44, text:'Thoracic Nerves' },
+  { type:'sym',  l:5,  t:65, text:'Lumbar Nerves' },
+  { type:'sym',  l:23, t:82, text:'Sympathetic Ganglia' },
+  { type:'sym',  l:10, t:93, text:'Norepinephrine — sympathetic neurotransmitter' },
+  { type:'para', l:57, t:7,  text:'Stimulates tears' },
+  { type:'para', l:55, t:11, text:'Ganglion' },
+  { type:'para', l:57, t:18, text:'Stimulates salivation' },
+  { type:'para', l:57, t:31, text:'Constricts bronchioles' },
+  { type:'para', l:57, t:43, text:'Slows heart' },
+  { type:'para', l:57, t:55, text:'Stimulates gallbladder to release bile' },
+  { type:'para', l:57, t:63, text:'Increases activity of stomach and pancreas' },
+  { type:'para', l:57, t:76, text:'Increases intestinal activity' },
+  { type:'para', l:57, t:91, text:'Stimulates urination' },
+  { type:'para', l:93, t:15, text:'Cranial Nerves' },
+  { type:'para', l:93, t:40, text:'Vagus Nerve' },
+  { type:'para', l:93, t:78, text:'Sacral Nerves' },
+  { type:'para', l:10, t:90, text:'Acetylcholine — parasympathetic neurotransmitter' },
+];
+
+const studyNotes = [
+  {
+    image: BASE_IMAGE,
+    spotIndexes: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    text: 'The <strong>autonomic nervous system</strong> controls involuntary functions such as heart rate, breathing, digestion, salivation, and urination. The numbered circles show organs affected by the ANS, from the eye <strong>(1)</strong> and salivary glands <strong>(2)</strong> down to the intestines <strong>(8)</strong> and bladder <strong>(9)</strong>.'
+  },
+  {
+    image: COMPLETE_IMAGE,
+    spotIndexes: [],
+    text: 'The ANS has two major divisions. The <span class="sym-word">sympathetic division</span> prepares the body for action, while the <span class="para-word">parasympathetic division</span> supports rest, digestion, and recovery. Red labels show sympathetic effects; blue labels show parasympathetic effects.'
+  },
+  {
+    image: SYMPATHETIC_IMAGE,
+    spotIndexes: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+    text: 'The <span class="sym-word">sympathetic nervous system</span> is the “fight-or-flight” system. It inhibits tears and salivation, dilates air passages, speeds the heart, releases glucose and adrenaline, slows digestion, and inhibits urination.'
+  },
+  {
+    image: PARASYMPATHETIC_IMAGE,
+    spotIndexes: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34],
+    text: 'The <span class="para-word">parasympathetic nervous system</span> is the “rest-and-digest” system. It stimulates tears and salivation, slows the heart, supports digestion, increases intestinal activity, and stimulates urination.'
+  },
+  {
+    image: BASE_IMAGE,
+    spotIndexes: [2, 3, 4, 6, 7, 8, 11, 12, 13, 15, 16, 25, 26, 27, 28, 29, 30],
+    text: 'Many organs receive signals from both divisions. The lungs <strong>(3)</strong>, heart <strong>(4)</strong>, digestive organs <strong>(7–8)</strong>, and bladder <strong>(9)</strong> often respond in opposite ways depending on which division is active.'
+  },
+  {
+    image: COMPLETE_IMAGE,
+    spotIndexes: [],
+    text: 'Use the full labelled diagram as a final review. <span class="sym-word">Sympathetic</span> responses generally prepare the body for action. <span class="para-word">Parasympathetic</span> responses generally support resting, digestion, and recovery.'
+  }
+];
+
+const wrap              = document.getElementById('diagram-wrap');
+const instrEl           = document.getElementById('instructions');
+const infoDisp          = document.getElementById('hover-display');
+const infoTextEl        = document.getElementById('hover-text');
+const infoEyebrow       = document.getElementById('hover-eyebrow');
+const diagramImg        = document.getElementById('diagram-img');
+const wrapupBtn         = document.getElementById('wrapup-btn');
+const notesPanel        = document.getElementById('notes-panel');
+const noteText          = document.getElementById('note-text');
+const notesCount        = document.getElementById('notes-count');
+const prevNoteBtn       = document.getElementById('prev-note');
+const nextNoteBtn       = document.getElementById('next-note');
+const noteDots          = document.getElementById('note-dots');
+const interactiveToggle = document.getElementById('interactive-toggle');
+const referenceToggle   = document.getElementById('reference-toggle');
+
+const EYEBROWS = { organ:'Organ', sym:'Sympathetic', para:'Parasympathetic' };
+
+let activeSpot = null;
+let refMode = false;
+let notesMode = false;
+let currentNote = 0;
+
+SPOTS.forEach((s, index) => {
+  const el = document.createElement('div');
+  el.className = 'spot spot-' + s.type;
+  if (s.type === 'organ') el.textContent = s.num;
+  el.style.left = s.l + '%';
+  el.style.top  = s.t + '%';
+  el.dataset.index = index;
+  el.dataset.type = s.type;
+  if (s.num) el.dataset.num = s.num;
+
+  el.addEventListener('mouseenter', () => {
+    if (!notesMode && !refMode) el.classList.add('lit');
+  });
+
+  el.addEventListener('mouseleave', () => {
+    if (!notesMode && !refMode && el !== activeSpot) el.classList.remove('lit');
+  });
+
+  el.addEventListener('click', () => {
+    if (notesMode || refMode) return;
+
+    if (activeSpot === el) {
+      resetToInstructions();
+      return;
+    }
+
+    if (activeSpot) activeSpot.classList.remove('lit');
+    activeSpot = el;
+    el.classList.add('lit');
+    infoEyebrow.textContent = EYEBROWS[s.type];
+    infoTextEl.textContent  = s.text;
+    infoTextEl.className    = 'hover-text ' + (s.type === 'organ' ? '' : s.type);
+    instrEl.classList.add('hidden');
+    infoDisp.classList.add('visible');
+  });
+
+  wrap.appendChild(el);
+});
+
+function setDiagramImage(src) {
+  if (diagramImg.getAttribute('src') === src) return;
+  diagramImg.style.opacity = '0';
+  setTimeout(() => {
+    diagramImg.src = src;
+    diagramImg.style.opacity = '1';
+  }, 150);
+}
+
+function updateImageToggle() {
+  interactiveToggle.classList.toggle('active', !refMode);
+  referenceToggle.classList.toggle('active', refMode);
+}
+
+function setInteractiveMode() {
+  refMode = false;
+  wrap.classList.remove('ref-mode');
+  updateImageToggle();
+
+  if (notesMode) {
+    const note = studyNotes[currentNote];
+    setDiagramImage(note.image);
+    showOnlyRelevantSpots(note.spotIndexes);
+  } else {
+    setDiagramImage(BASE_IMAGE);
+    showAllSpots();
+    resetSelectionOnly();
+  }
+}
+
+function setReferenceMode() {
+  exitStudyNotes(false);
+  resetSelectionOnly();
+  refMode = true;
+  wrap.classList.add('ref-mode');
+  setDiagramImage(COMPLETE_IMAGE);
+  updateImageToggle();
+}
+
+function resetSelectionOnly() {
+  if (activeSpot) {
+    activeSpot.classList.remove('lit');
+    activeSpot = null;
+  }
+  infoDisp.classList.remove('visible');
+  instrEl.classList.remove('hidden');
+}
+
+function resetToInstructions() {
+  notesMode = false;
+  refMode = false;
+  resetSelectionOnly();
+  notesPanel.classList.remove('visible');
+  wrapupBtn.classList.remove('active');
+  wrapupBtn.textContent = 'Wrap Up / Study Notes';
+  wrap.classList.remove('ref-mode');
+  updateImageToggle();
+  showAllSpots();
+  setDiagramImage(BASE_IMAGE);
+}
+
+function toggleStudyNotes() {
+  if (notesMode) {
+    exitStudyNotes();
+  } else {
+    startStudyNotes();
+  }
+}
+
+function startStudyNotes() {
+  notesMode = true;
+  refMode = false;
+
+  resetSelectionOnly();
+  wrap.classList.remove('ref-mode');
+  updateImageToggle();
+
+  instrEl.classList.add('hidden');
+  infoDisp.classList.remove('visible');
+  notesPanel.classList.add('visible');
+  wrapupBtn.classList.add('active');
+  wrapupBtn.textContent = 'Back to Activity';
+
+  showNote(0, false);
+}
+
+function exitStudyNotes(returnToBase = true) {
+  notesMode = false;
+  notesPanel.classList.remove('visible');
+  wrapupBtn.classList.remove('active');
+  wrapupBtn.textContent = 'Wrap Up / Study Notes';
+
+  if (returnToBase) {
+    refMode = false;
+    wrap.classList.remove('ref-mode');
+    updateImageToggle();
+    instrEl.classList.remove('hidden');
+    showAllSpots();
+    setDiagramImage(BASE_IMAGE);
+  }
+}
+
+function createNoteDots() {
+  noteDots.innerHTML = '';
+  studyNotes.forEach((_, index) => {
+    const dot = document.createElement('span');
+    dot.className = 'note-dot';
+    if (index === currentNote) dot.classList.add('active');
+    noteDots.appendChild(dot);
+  });
+}
+
+function showNote(index, animate = true) {
+  currentNote = Math.max(0, Math.min(index, studyNotes.length - 1));
+
+  const update = () => {
+    const note = studyNotes[currentNote];
+
+    noteText.innerHTML = note.text;
+    notesCount.textContent = `Note ${currentNote + 1} of ${studyNotes.length}`;
+    prevNoteBtn.disabled = currentNote === 0;
+    nextNoteBtn.disabled = currentNote === studyNotes.length - 1;
+    createNoteDots();
+
+    refMode = false;
+    wrap.classList.remove('ref-mode');
+    updateImageToggle();
+
+    setDiagramImage(note.image);
+    showOnlyRelevantSpots(note.spotIndexes);
+
+    noteText.classList.remove('fade-out');
+    if (animate) {
+      noteText.classList.remove('fade-in');
+      void noteText.offsetWidth;
+      noteText.classList.add('fade-in');
+    }
+  };
+
+  if (animate) {
+    noteText.classList.add('fade-out');
+    setTimeout(update, 170);
+  } else {
+    update();
+  }
+}
+
+function showOnlyRelevantSpots(indexes = null) {
+  const activeIndexes = Array.isArray(indexes) ? new Set(indexes.map(Number)) : null;
+
+  document.querySelectorAll('.spot').forEach(spot => {
+    const index = Number(spot.dataset.index);
+    spot.classList.remove('lit');
+
+    if (activeIndexes === null) {
+      spot.classList.remove('hidden');
+    } else {
+      spot.classList.toggle('hidden', !activeIndexes.has(index));
+      if (activeIndexes.has(index)) spot.classList.add('lit');
+    }
+  });
+}
+
+function showAllSpots() {
+  document.querySelectorAll('.spot').forEach(spot => {
+    spot.classList.remove('hidden');
+    spot.classList.remove('lit');
+  });
+}
+
+updateImageToggle();
+</script>
+</body>
+</html>
